@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { PwaRegister } from "@/components/pwa-register";
-import { DemoBanner } from "@/components/demo-banner";
 import { SITE } from "@/lib/site";
 import {
   allowIndexing,
@@ -66,7 +65,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <PwaRegister />
-        <DemoBanner />
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
