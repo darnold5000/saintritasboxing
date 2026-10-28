@@ -74,6 +74,7 @@ export function BookingExperience({
   const [serverError, setServerError] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
   const [creditLookup, setCreditLookup] = useState<CreditLookup | null>(null);
+  const [creditLookupLoading, setCreditLookupLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     verifyToken ? "use_credit" : "pay_single",
   );
@@ -83,11 +84,41 @@ export function BookingExperience({
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim());
   const creditLookupDisplay = emailValid ? creditLookup : null;
+  const creditLookupBusy = emailValid && creditLookupLoading;
+  const typeMeta = TRAINING_TYPES[trainingType];
+  const scheduleReady = Boolean(date && time);
   const verifyCreditBanner = verifyToken
     ? "Email verified — confirm below to book with your credit."
     : "";
-  const typeMeta = TRAINING_TYPES[trainingType];
-  const scheduleReady = Boolean(date && time);
+
+  const creditOptionDetail = useMemo(() => {
+    if (!emailValid) {
+      return "Package credits stay on the email you used at checkout. Enter that email above to see your balance.";
+    }
+    if (creditLookupBusy && !creditLookup) {
+      return "Checking credits for this email…";
+    }
+    if (creditLookup && !creditLookup.configured) {
+      return "Live credit lookup needs Supabase configured. You can still try this option once the site is connected.";
+    }
+    if (creditLookupDisplay?.hasCredit) {
+      if (creditLookupDisplay.unlimitedActive) {
+        return "Monthly unlimited — this session is included.";
+      }
+      const n = creditLookupDisplay.remaining ?? 0;
+      return `${n} session${n === 1 ? "" : "s"} left for ${typeMeta.shortName} on this email.`;
+    }
+    if (creditLookup) {
+      return "No remaining credits for this training type on this email. Pay for this session or buy a package below.";
+    }
+    return "Checking credits for this email…";
+  }, [
+    creditLookup,
+    creditLookupDisplay,
+    creditLookupBusy,
+    emailValid,
+    typeMeta.shortName,
+  ]);
 
   useEffect(() => {
     const first = date ?? initialDates[0];
@@ -98,7 +129,9 @@ export function BookingExperience({
   useEffect(() => {
     if (!emailValid) return;
     const email = customer.email.trim();
+    let cancelled = false;
     const handle = setTimeout(() => {
+      setCreditLookupLoading(true);
       void fetch("/api/credits/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,14 +139,23 @@ export function BookingExperience({
       })
         .then((res) => res.json())
         .then((body: CreditLookup) => {
+          if (cancelled) return;
           setCreditLookup(body);
           if (body.hasCredit && !verifyToken) {
             setPaymentMethod("use_credit");
           }
         })
-        .catch(() => setCreditLookup(null));
+        .catch(() => {
+          if (!cancelled) setCreditLookup(null);
+        })
+        .finally(() => {
+          if (!cancelled) setCreditLookupLoading(false);
+        });
     }, 400);
-    return () => clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [customer.email, trainingType, verifyToken, emailValid]);
 
   function setQueryType(next: TrainingTypeId) {
@@ -172,6 +214,18 @@ export function BookingExperience({
     const nextErrors = validateCustomerInput({ ...customer, trainingType });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+
+    if (
+      paymentMethod === "use_credit" &&
+      emailValid &&
+      creditLookup?.configured &&
+      !creditLookup.hasCredit
+    ) {
+      setServerError(
+        "No session credits on this email for this training type. Pay for this session or buy a package.",
+      );
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -343,7 +397,8 @@ export function BookingExperience({
                 onChange={(value) => setCustomer({ ...customer, fullName: value })}
               />
               <Field
-                label="Email"
+                label="Email (required)"
+                hint="Use the same address you used when you bought a package — credits and purchase history stay on that email."
                 type="email"
                 value={customer.email}
                 error={errors.email}
@@ -414,18 +469,12 @@ export function BookingExperience({
                 How would you like to pay?
               </p>
               <div className="mt-4 space-y-2">
-                {creditLookupDisplay?.hasCredit ? (
-                  <PaymentOption
-                    checked={paymentMethod === "use_credit"}
-                    onChange={() => setPaymentMethod("use_credit")}
-                    title="Use session credit"
-                    detail={
-                      creditLookupDisplay.unlimitedActive
-                        ? "Monthly unlimited — this session is included."
-                        : `${creditLookupDisplay.remaining ?? 0} session${creditLookupDisplay.remaining === 1 ? "" : "s"} left on your account.`
-                    }
-                  />
-                ) : null}
+                <PaymentOption
+                  checked={paymentMethod === "use_credit"}
+                  onChange={() => setPaymentMethod("use_credit")}
+                  title="Use session credit"
+                  detail={creditOptionDetail}
+                />
                 <PaymentOption
                   checked={paymentMethod === "pay_single"}
                   onChange={() => setPaymentMethod("pay_single")}
@@ -554,12 +603,14 @@ function Field({
   value,
   onChange,
   error,
+  hint,
   type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  hint?: string;
   type?: string;
 }) {
   return (
@@ -567,10 +618,13 @@ function Field({
       {label}
       <input
         type={type}
+        required={type === "email"}
+        autoComplete={type === "email" ? "email" : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="mt-1 w-full rounded-md border border-white/15 bg-ink px-3 py-2 text-white"
       />
+      {hint ? <span className="mt-1 block text-xs text-white/55">{hint}</span> : null}
       {error ? <span className="mt-1 block text-xs text-red-300">{error}</span> : null}
     </label>
   );
