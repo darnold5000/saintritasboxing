@@ -318,14 +318,25 @@ export function BookingExperience({
     }
   }
 
-  const summaryPrice =
+  const summaryBilling =
     paymentMethod === "use_credit"
-      ? "1 session credit"
+      ? {
+          label: creditLookupDisplay?.unlimitedActive ? "Plan" : "Session credit",
+          value: creditLookupDisplay?.unlimitedActive
+            ? "Monthly unlimited · no charge for this session"
+            : "1 package credit · no card charge today",
+        }
       : paymentMethod === "pay_single"
-        ? formatUsd(singleOffering?.priceCents ?? 0)
-        : formatUsd(
-            packages.find((item) => item.id === packageOfferingId)?.priceCents ?? 0,
-          );
+        ? {
+            label: "Payment",
+            value: formatUsd(singleOffering?.priceCents ?? 0),
+          }
+        : {
+            label: "Payment",
+            value: `${formatUsd(
+              packages.find((item) => item.id === packageOfferingId)?.priceCents ?? 0,
+            )} (package; 1 session applied to this booking)`,
+          };
 
   const submitLabel =
     paymentMethod === "use_credit"
@@ -548,7 +559,7 @@ export function BookingExperience({
           <Row label="Time" value={time ? formatTime(time) : "Select a time"} />
           <Row label="Duration" value={`${SITE.defaultSessionDurationMinutes} minutes`} />
           <Row label="Location" value={SITE.address.full} />
-          <Row label="Payment" value={summaryPrice} />
+          <Row label={summaryBilling.label} value={summaryBilling.value} />
         </dl>
         {demo ? (
           <p className="mt-4 rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs text-gold">
