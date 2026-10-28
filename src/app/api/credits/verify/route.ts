@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { consumeAccessToken, customerCredits, lookupAccessToken } from "@/lib/data/customers";
+import { consumeAccessToken, customerCredits, lookupAccessToken, upsertCustomer } from "@/lib/data/customers";
 import { bookWithCredits } from "@/lib/data/credit-book";
 import { TRAINING_TYPE_IDS } from "@/lib/catalog";
 
@@ -9,8 +9,19 @@ const bookSchema = z.object({
   trainingType: z.enum(TRAINING_TYPE_IDS),
   sessionDate: z.string(),
   startTime: z.string(),
-  partnerName: z.string().optional(),
-  notes: z.string().optional(),
+  customer: z
+    .object({
+      fullName: z.string(),
+      email: z.string(),
+      phone: z.string(),
+      partnerName: z.string().optional(),
+      isMinor: z.boolean().optional(),
+      guardianName: z.string().optional(),
+      guardianEmail: z.string().optional(),
+      guardianPhone: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
 });
 
 export async function GET(request: Request) {
@@ -33,13 +44,18 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "This link is invalid or expired." }, { status: 400 });
   }
+
+  if (parsed.data.customer) {
+    await upsertCustomer(parsed.data.customer);
+  }
+
   const result = await bookWithCredits({
     email,
     trainingType: parsed.data.trainingType,
     sessionDate: parsed.data.sessionDate,
     startTime: parsed.data.startTime,
-    partnerName: parsed.data.partnerName,
-    notes: parsed.data.notes,
+    partnerName: parsed.data.customer?.partnerName,
+    notes: parsed.data.customer?.notes,
   });
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });

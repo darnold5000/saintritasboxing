@@ -6,23 +6,30 @@ import { DateStrip } from "@/components/booking/date-strip";
 import { TimeGrid } from "@/components/booking/time-grid";
 import { Button } from "@/components/ui/button";
 import {
-  OFFERINGS,
   TRAINING_TYPES,
   formatUsd,
-  offeringsForType,
-  packageSavings,
+  packageOfferingsForType,
+  singleOfferingForType,
   type TrainingTypeId,
 } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
 import { formatLongDate, formatTime, startOfWeek, todayISO } from "@/lib/dates";
-import { firstSessionRequired, validateCustomerInput } from "@/lib/booking-rules";
+import { validateCustomerInput } from "@/lib/booking-rules";
 
 type AvailabilityResponse = {
   dates: string[];
   times: string[];
   demo: boolean;
-  durationMinutes: number;
 };
+
+type CreditLookup = {
+  hasCredit: boolean;
+  remaining: number | null;
+  unlimitedActive: boolean;
+  configured: boolean;
+};
+
+type PaymentMethod = "use_credit" | "pay_single" | "buy_package";
 
 const EMPTY = {
   fullName: "",
@@ -49,64 +56,88 @@ export function BookingExperience({
 
   const typeParam = params.get("type");
   const trainingType: TrainingTypeId = typeParam === "partner" ? "partner" : "private";
-  const offerings = offeringsForType(trainingType);
-  const offeringId = params.get("offering") ?? offerings[0]?.id ?? "private-single";
-  const offering = OFFERINGS.find((item) => item.id === offeringId) ?? offerings[0];
+  const singleOffering = singleOfferingForType(trainingType);
+  const packages = packageOfferingsForType(trainingType);
+  const verifyToken = params.get("token");
 
   const [weekISO, setWeekISO] = useState(startOfWeek(today));
-  const [date, setDate] = useState<string | null>(initialDates[0] ?? null);
-  const [time, setTime] = useState<string | null>(null);
+  const [date, setDate] = useState<string | null>(params.get("date") ?? initialDates[0] ?? null);
+  const [time, setTime] = useState<string | null>(params.get("time"));
   const [times, setTimes] = useState<string[]>([]);
-  const [availableDates, setAvailableDates] = useState(new Set(initialDates));
-  const [step, setStep] = useState<"schedule" | "details">("schedule");
+  const available = useMemo(() => new Set(initialDates), [initialDates]);
+  const [step, setStep] = useState<"schedule" | "details">(
+    verifyToken && params.get("date") && params.get("time") ? "details" : "schedule",
+  );
   const [customer, setCustomer] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+  const [creditLookup, setCreditLookup] = useState<CreditLookup | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    verifyToken ? "use_credit" : "pay_single",
+  );
+  const [packageOfferingId, setPackageOfferingId] = useState(
+    packages[0]?.id ?? "",
+  );
 
-  const available = useMemo(() => availableDates, [availableDates]);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim());
+  const creditLookupDisplay = emailValid ? creditLookup : null;
+  const verifyCreditBanner = verifyToken
+    ? "Email verified — confirm below to book with your credit."
+    : "";
+  const typeMeta = TRAINING_TYPES[trainingType];
+  const scheduleReady = Boolean(date && time);
 
   useEffect(() => {
-    const first = initialDates[0];
+    const first = date ?? initialDates[0];
     if (first) void loadTimes(first);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function setQuery(next: Record<string, string | null>) {
+  useEffect(() => {
+    if (!emailValid) return;
+    const email = customer.email.trim();
+    const handle = setTimeout(() => {
+      void fetch("/api/credits/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, trainingType }),
+      })
+        .then((res) => res.json())
+        .then((body: CreditLookup) => {
+          setCreditLookup(body);
+          if (body.hasCredit && !verifyToken) {
+            setPaymentMethod("use_credit");
+          }
+        })
+        .catch(() => setCreditLookup(null));
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [customer.email, trainingType, verifyToken, emailValid]);
+
+  function setQueryType(next: TrainingTypeId) {
     const search = new URLSearchParams(params.toString());
-    for (const [key, value] of Object.entries(next)) {
-      if (value) search.set(key, value);
-      else search.delete(key);
-    }
+    search.set("type", next);
+    search.delete("token");
     router.replace(`/book?${search.toString()}`, { scroll: false });
+  }
+
+  function selectType(next: TrainingTypeId) {
+    setDate(null);
+    setTime(null);
+    setTimes([]);
+    setStep("schedule");
+    setPaymentMethod("pay_single");
+    setPackageOfferingId(packageOfferingsForType(next)[0]?.id ?? "");
+    setQueryType(next);
   }
 
   async function loadTimes(nextDate: string) {
     const res = await fetch(`/api/availability?date=${nextDate}`);
     const body = (await res.json()) as AvailabilityResponse;
     setTimes(body.times ?? []);
-    setTime(null);
-  }
-
-  async function refreshDates() {
-    const res = await fetch("/api/availability");
-    const body = (await res.json()) as AvailabilityResponse;
-    setAvailableDates(new Set(body.dates ?? []));
-  }
-
-  function selectType(next: TrainingTypeId) {
-    const first = offeringsForType(next)[0];
-    setDate(null);
-    setTime(null);
-    setTimes([]);
-    setStep("schedule");
-    setQuery({ type: next, offering: first?.id ?? null });
-  }
-
-  function selectOffering(id: string) {
-    setTime(null);
-    setStep("schedule");
-    setQuery({ type: trainingType, offering: id });
+    if (time && !(body.times ?? []).includes(time)) setTime(null);
   }
 
   async function selectDate(iso: string) {
@@ -114,55 +145,105 @@ export function BookingExperience({
     await loadTimes(iso);
   }
 
-  const needsSchedule = offering ? firstSessionRequired(offering) : true;
-  const scheduleReady = Boolean(date && time);
-  const canContinue = offering && (!needsSchedule || scheduleReady);
-
   async function continueToDetails() {
     setServerError("");
-    if (!canContinue) {
+    setInfoMessage("");
+    if (!scheduleReady) {
       setServerError("Choose a date and time to continue.");
       return;
     }
-    await refreshDates();
     setStep("details");
   }
 
+  function checkoutOfferingId(): string | null {
+    if (paymentMethod === "pay_single") return singleOffering?.id ?? null;
+    if (paymentMethod === "buy_package") return packageOfferingId || null;
+    return null;
+  }
+
   async function submit() {
-    if (!offering) return;
-    const nextErrors = validateCustomerInput({
-      ...customer,
-      trainingType,
-    });
+    setServerError("");
+    setInfoMessage("");
+    if (!scheduleReady) {
+      setServerError("Choose a date and time.");
+      return;
+    }
+
+    const nextErrors = validateCustomerInput({ ...customer, trainingType });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitting(true);
-    setServerError("");
     try {
-      const creditToken = params.get("token");
-      const endpoint = creditToken ? "/api/credits/verify" : "/api/checkout";
-      const payload = creditToken
-        ? {
-            token: creditToken,
+      if (paymentMethod === "use_credit") {
+        if (verifyToken) {
+          const res = await fetch("/api/credits/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: verifyToken,
+              trainingType,
+              sessionDate: date,
+              startTime: time,
+              customer,
+            }),
+          });
+          const body = (await res.json()) as { error?: string; ok?: boolean };
+          if (!res.ok) {
+            setServerError(body.error ?? "Could not book with credit.");
+            return;
+          }
+          router.push("/book/success?booked=credit");
+          return;
+        }
+
+        const res = await fetch("/api/book/credit-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             trainingType,
             sessionDate: date,
             startTime: time,
-            partnerName: customer.partnerName,
-            notes: customer.notes,
-          }
-        : {
-            offeringId: offering.id,
-            sessionDate: date,
-            startTime: time,
             customer,
-          };
-      const res = await fetch(endpoint, {
+          }),
+        });
+        const body = (await res.json()) as {
+          error?: string;
+          message?: string;
+          confirmUrl?: string;
+          demo?: boolean;
+        };
+        if (!res.ok) {
+          setServerError(body.error ?? "Could not start credit booking.");
+          return;
+        }
+        setInfoMessage(
+          body.message ??
+            (body.demo
+              ? "Demo mode — configure Supabase and Resend for live credit confirmation."
+              : "Check your email to confirm."),
+        );
+        if (body.confirmUrl) setInfoMessage(`${body.message}\n${body.confirmUrl}`);
+        return;
+      }
+
+      const offeringId = checkoutOfferingId();
+      if (!offeringId) {
+        setServerError("Choose a payment option.");
+        return;
+      }
+
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          offeringId,
+          sessionDate: date,
+          startTime: time,
+          customer,
+        }),
       });
-      const body = (await res.json()) as { error?: string; url?: string; demo?: boolean };
+      const body = (await res.json()) as { error?: string; url?: string; demo?: boolean; message?: string };
       if (!res.ok) {
         setServerError(body.error ?? "Could not start checkout.");
         return;
@@ -183,8 +264,21 @@ export function BookingExperience({
     }
   }
 
-  const savings = offering ? packageSavings(offering) : null;
-  const typeMeta = TRAINING_TYPES[trainingType];
+  const summaryPrice =
+    paymentMethod === "use_credit"
+      ? "1 session credit"
+      : paymentMethod === "pay_single"
+        ? formatUsd(singleOffering?.priceCents ?? 0)
+        : formatUsd(
+            packages.find((item) => item.id === packageOfferingId)?.priceCents ?? 0,
+          );
+
+  const submitLabel =
+    paymentMethod === "use_credit"
+      ? verifyToken
+        ? "Confirm booking with credit"
+        : "Email me to confirm with credit"
+      : "Continue to payment";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
@@ -214,50 +308,8 @@ export function BookingExperience({
 
         <section className="rounded-2xl border border-white/10 bg-surface p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Step 2 — Session or package
+            Step 2 — Select date
           </p>
-          <div className="mt-4 grid gap-2">
-            {offerings.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => selectOffering(item.id)}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left ${
-                  offering?.id === item.id
-                    ? "border-brand bg-brand/30"
-                    : "border-white/10 bg-ink"
-                }`}
-              >
-                <span>
-                  <span className="block font-semibold text-white">{item.name}</span>
-                  {item.kind === "subscription" ? (
-                    <span className="text-xs text-gold">Recurring monthly</span>
-                  ) : null}
-                </span>
-                <span className="font-heading text-xl text-gold">
-                  {formatUsd(item.priceCents)}
-                  {item.interval === "month" ? "/mo" : ""}
-                </span>
-              </button>
-            ))}
-          </div>
-          {trainingType === "partner" ? (
-            <p className="mt-3 text-xs text-white/60">
-              Partner prices are the TOTAL for two participants, not per person.
-            </p>
-          ) : null}
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-surface p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Step 3 — Select date
-          </p>
-          {!needsSchedule ? (
-            <p className="mt-3 text-sm text-white/70">
-              You can buy this package now and schedule sessions after payment, or pick a
-              first session below.
-            </p>
-          ) : null}
           <div className="mt-4">
             <DateStrip
               weekStart={weekISO}
@@ -271,7 +323,7 @@ export function BookingExperience({
 
         <section className="rounded-2xl border border-white/10 bg-surface p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Step 4 — Available times
+            Step 3 — Available times
           </p>
           <div className="mt-4">
             <TimeGrid times={times} selected={time} onSelect={setTime} />
@@ -281,7 +333,7 @@ export function BookingExperience({
         {step === "details" ? (
           <section className="rounded-2xl border border-white/10 bg-surface p-5 sm:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-              Your information
+              Step 4 — Your information
             </p>
             <div className="mt-4 grid gap-3">
               <Field
@@ -356,12 +408,81 @@ export function BookingExperience({
                 />
               </label>
             </div>
+
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
+                How would you like to pay?
+              </p>
+              <div className="mt-4 space-y-2">
+                {creditLookupDisplay?.hasCredit ? (
+                  <PaymentOption
+                    checked={paymentMethod === "use_credit"}
+                    onChange={() => setPaymentMethod("use_credit")}
+                    title="Use session credit"
+                    detail={
+                      creditLookupDisplay.unlimitedActive
+                        ? "Monthly unlimited — this session is included."
+                        : `${creditLookupDisplay.remaining ?? 0} session${creditLookupDisplay.remaining === 1 ? "" : "s"} left on your account.`
+                    }
+                  />
+                ) : null}
+                <PaymentOption
+                  checked={paymentMethod === "pay_single"}
+                  onChange={() => setPaymentMethod("pay_single")}
+                  title="Pay for this session"
+                  detail={`${formatUsd(singleOffering?.priceCents ?? 0)} — card checkout`}
+                />
+                <PaymentOption
+                  checked={paymentMethod === "buy_package"}
+                  onChange={() => setPaymentMethod("buy_package")}
+                  title="Buy a package & book this session"
+                  detail="Pay for a package now. One session is used for this appointment; the rest stay on your account."
+                />
+              </div>
+              {paymentMethod === "buy_package" ? (
+                <div className="mt-3 space-y-2">
+                  {packages.map((pkg) => (
+                    <label
+                      key={pkg.id}
+                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 ${
+                        packageOfferingId === pkg.id
+                          ? "border-brand bg-brand/20"
+                          : "border-white/10"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-sm text-white">
+                        <input
+                          type="radio"
+                          name="package"
+                          checked={packageOfferingId === pkg.id}
+                          onChange={() => setPackageOfferingId(pkg.id)}
+                        />
+                        {pkg.name}
+                      </span>
+                      <span className="font-heading text-gold">{formatUsd(pkg.priceCents)}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              {paymentMethod === "use_credit" && !verifyToken ? (
+                <p className="mt-3 text-xs text-white/60">
+                  We&apos;ll email you a secure link to confirm this booking with your credit.
+                </p>
+              ) : null}
+            </div>
+
+            {(infoMessage || verifyCreditBanner) ? (
+              <p className="mt-4 whitespace-pre-wrap text-sm text-gold">
+                {infoMessage || verifyCreditBanner}
+              </p>
+            ) : null}
+
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={() => setStep("schedule")}>
                 Back
               </Button>
               <Button type="button" onClick={() => void submit()} disabled={submitting}>
-                {submitting ? "Starting checkout…" : "Continue to book"}
+                {submitting ? "Working…" : submitLabel}
               </Button>
             </div>
           </section>
@@ -374,33 +495,15 @@ export function BookingExperience({
         </p>
         <h2 className="mt-2 font-heading text-2xl text-white">{typeMeta.name}</h2>
         <dl className="mt-4 space-y-2 text-sm text-white/75">
-          <Row label="Selection" value={offering?.name ?? "—"} />
-          <Row
-            label="Date"
-            value={date ? formatLongDate(date) : needsSchedule ? "Select a date" : "Schedule after purchase"}
-          />
+          <Row label="Date" value={date ? formatLongDate(date) : "Select a date"} />
           <Row label="Time" value={time ? formatTime(time) : "Select a time"} />
           <Row label="Duration" value={`${SITE.defaultSessionDurationMinutes} minutes`} />
           <Row label="Location" value={SITE.address.full} />
-          <Row
-            label="Price"
-            value={`${formatUsd(offering?.priceCents ?? 0)}${offering?.interval === "month" ? "/month" : ""}`}
-          />
+          <Row label="Payment" value={summaryPrice} />
         </dl>
-        {savings ? (
-          <p className="mt-3 text-sm font-semibold text-gold">
-            Save {formatUsd(savings.savedCents)} versus {offering?.sessions} single sessions.
-          </p>
-        ) : null}
-        {offering?.kind === "subscription" ? (
-          <p className="mt-3 text-xs text-white/60">
-            Recurring monthly. Cancel or manage through the Stripe customer portal after
-            checkout.
-          </p>
-        ) : null}
         {demo ? (
           <p className="mt-4 rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs text-gold">
-            Sample availability until gym hours are confirmed and Stripe/Supabase are connected.
+            Sample availability until gym hours and payments are configured.
           </p>
         ) : null}
         {serverError ? (
@@ -410,13 +513,39 @@ export function BookingExperience({
         ) : null}
         {step === "schedule" ? (
           <div className="mt-6">
-            <Button className="w-full" onClick={() => void continueToDetails()} disabled={!canContinue}>
-              Continue to book
+            <Button className="w-full" onClick={() => void continueToDetails()} disabled={!scheduleReady}>
+              Continue
             </Button>
           </div>
         ) : null}
       </aside>
     </div>
+  );
+}
+
+function PaymentOption({
+  checked,
+  onChange,
+  title,
+  detail,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded-xl border p-4 ${
+        checked ? "border-brand bg-brand/25" : "border-white/10 bg-ink"
+      }`}
+    >
+      <input type="radio" name="payment" checked={checked} onChange={onChange} className="mt-1" />
+      <span>
+        <span className="block font-semibold text-white">{title}</span>
+        <span className="mt-1 block text-xs text-white/65">{detail}</span>
+      </span>
+    </label>
   );
 }
 

@@ -19,8 +19,9 @@ export default async function BookPage() {
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Book now</p>
       <h1 className="mt-3 font-heading text-4xl text-white sm:text-5xl">Book training</h1>
       <p className="mt-3 max-w-2xl text-sm text-white/70">
-        Choose training, a package, then a date and time. Payment stays on this site
-        through Stripe Checkout. No third-party booking software.
+        Pick your training type, date, and time. Then choose to pay for one session, buy a
+        package (this session uses one credit from the package), or book with credits already
+        on your account.
       </p>
       <div className="mt-8">
         <Suspense fallback={<p className="text-sm text-white/60">Loading booking…</p>}>

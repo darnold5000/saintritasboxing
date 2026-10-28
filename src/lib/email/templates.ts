@@ -120,3 +120,21 @@ export function magicLinkEmail(input: { name?: string; url: string }) {
   const text = `Open your training: ${input.url}`;
   return { html, text, subject: `Your ${SITE.name} training link` };
 }
+
+export function bookingConfirmEmail(input: {
+  name: string;
+  date: string;
+  time: string;
+  url: string;
+}) {
+  const html = wrap(
+    "Confirm your session",
+    `<p>Hi ${escapeHtml(input.name.split(" ")[0] || "there")},</p>
+     <p>Confirm this booking using <strong>1 session credit</strong>:</p>
+     <p>${escapeHtml(input.date)} at ${escapeHtml(input.time)}<br>${escapeHtml(SITE.address.full)}</p>
+     <p><a href="${escapeHtml(input.url)}" style="color:#F3B72F;">Confirm booking</a></p>
+     <p style="font-size:13px;color:#B9B5C0;">This link expires in 30 minutes.</p>`,
+  );
+  const text = `Confirm your session: ${input.date} ${input.time}\n${input.url}`;
+  return { html, text, subject: `Confirm your session — ${SITE.name}` };
+}

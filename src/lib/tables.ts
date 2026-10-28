@@ -10,4 +10,5 @@ export const TABLES = {
   stripeEvents: "srb_stripe_events",
   accessTokens: "srb_access_tokens",
   contactMessages: "srb_contact_messages",
+  creditAdjustments: "srb_credit_adjustments",
 } as const;

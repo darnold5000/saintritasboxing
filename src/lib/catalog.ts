@@ -173,6 +173,16 @@ export function offeringsForType(type: TrainingTypeId) {
   return OFFERINGS.filter((item) => item.trainingType === type);
 }
 
+export function singleOfferingForType(type: TrainingTypeId) {
+  return OFFERINGS.find((item) => item.trainingType === type && item.kind === "single") ?? null;
+}
+
+export function packageOfferingsForType(type: TrainingTypeId) {
+  return OFFERINGS.filter(
+    (item) => item.trainingType === type && item.kind === "package",
+  );
+}
+
 export function formatUsd(cents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
