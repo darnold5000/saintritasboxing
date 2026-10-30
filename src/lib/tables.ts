@@ -5,6 +5,7 @@ export const TABLES = {
   subscriptions: "srb_subscriptions",
   bookings: "srb_bookings",
   availabilityRules: "srb_availability_rules",
+  trainingSlots: "srb_training_slots",
   blockedDates: "srb_blocked_dates",
   extraSlots: "srb_extra_slots",
   stripeEvents: "srb_stripe_events",

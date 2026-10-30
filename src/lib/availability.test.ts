@@ -15,6 +15,15 @@ describe("availability", () => {
     assert.deepEqual(times, ["06:00", "07:00"]);
   });
 
+  it("uses saved class times instead of the open-hours grid", () => {
+    const config = demoAvailabilityConfig();
+    config.fixedTimes = [{ weekday: 3, start: "18:30" }];
+    const wednesday = openingsForDate("2026-11-04", config, new Date("2026-11-01T12:00:00Z"));
+    assert.deepEqual(wednesday, ["18:30"]);
+    const thursday = openingsForDate("2026-11-05", config, new Date("2026-11-01T12:00:00Z"));
+    assert.deepEqual(thursday, []);
+  });
+
   it("closes class slots on weekends", () => {
     const config = demoAvailabilityConfig();
     config.weekdaysOnly = true;

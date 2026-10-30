@@ -37,8 +37,10 @@ export type AvailabilityConfig = {
   extraSlots: Array<{ date: string; time: string }>;
   durationMinutes: number;
   bookedSlots: Array<{ date: string; time: string }>;
-  /** Class memberships only open Monday–Friday. */
+  /** Class memberships only open Monday–Friday when no explicit times are saved. */
   weekdaysOnly?: boolean;
+  /** Exact weekly start times. When set, these replace the open-hours grid. */
+  fixedTimes?: Array<{ weekday: number; start: string }>;
 };
 
 export function slotTimesForHours(
@@ -72,16 +74,24 @@ export function openingsForDate(
   if (config.blockedDates.includes(date)) return [];
   const weekday = weekdayIndex(date);
   if (config.weekdaysOnly && (weekday === 0 || weekday === 6)) return [];
+  const booked = new Set(
+    config.bookedSlots
+      .filter((slot) => slot.date === date)
+      .map((slot) => slot.time.slice(0, 5)),
+  );
+  if (config.fixedTimes) {
+    const times = config.fixedTimes
+      .filter((slot) => slot.weekday === weekday)
+      .map((slot) => slot.start.slice(0, 5));
+    return Array.from(new Set(times))
+      .sort()
+      .filter((time) => !booked.has(time) && !isSlotInPast(date, time, now));
+  }
   const hours = config.weekly[weekday] ?? { enabled: false, start: "09:00", end: "17:00" };
   const base = slotTimesForHours(hours, config.durationMinutes);
   const extras = config.extraSlots
     .filter((slot) => slot.date === date)
-    .map((slot) => slot.time);
-  const booked = new Set(
-    config.bookedSlots
-      .filter((slot) => slot.date === date)
-      .map((slot) => slot.time),
-  );
+    .map((slot) => slot.time.slice(0, 5));
   const unique = Array.from(new Set([...base, ...extras])).sort();
   return unique.filter((time) => !booked.has(time) && !isSlotInPast(date, time, now));
 }
