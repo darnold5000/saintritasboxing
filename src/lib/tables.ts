@@ -11,4 +11,5 @@ export const TABLES = {
   accessTokens: "srb_access_tokens",
   contactMessages: "srb_contact_messages",
   creditAdjustments: "srb_credit_adjustments",
+  reviews: "srb_reviews",
 } as const;

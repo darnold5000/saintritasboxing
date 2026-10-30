@@ -18,7 +18,7 @@ export default function LoginPage() {
         <p className="text-sm font-semibold uppercase tracking-widest text-brand">{SITE.shortName}</p>
         <h1 className="mt-2 font-heading text-3xl text-foreground">Staff login</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in to manage bookings, availability, and customers.
+          Sign in to manage bookings, availability, and clients.
         </p>
         {!configured ? (
           <p className="mt-4 rounded-md bg-gold/20 px-3 py-2 text-sm text-foreground">

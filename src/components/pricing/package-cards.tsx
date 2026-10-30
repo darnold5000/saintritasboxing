@@ -30,8 +30,8 @@ export function PackageCards() {
                   >
                     <h3 className="font-heading text-2xl text-white">{offering.name}</h3>
                     <p className="mt-3 font-heading text-4xl text-gold">
-                      {formatUsd(offering.priceCents)}
-                      {offering.interval === "month" ? (
+                      {offering.priceCents > 0 ? formatUsd(offering.priceCents) : "Rate not set"}
+                      {offering.interval === "month" && offering.priceCents > 0 ? (
                         <span className="ml-1 text-base font-sans text-white/60">/month</span>
                       ) : null}
                     </p>

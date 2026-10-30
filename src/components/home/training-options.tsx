@@ -9,7 +9,7 @@ export function HomeTrainingOptions() {
           Training options
         </p>
         <h2 className="mt-3 font-heading text-4xl text-white sm:text-5xl">
-          Private or partner.
+          Private, partner, or weekly class.
         </h2>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           {Object.values(TRAINING_TYPES).map((type) => (
@@ -23,9 +23,9 @@ export function HomeTrainingOptions() {
               <h3 className="mt-2 font-heading text-3xl text-white">{type.name}</h3>
               <p className="mt-3 text-sm leading-relaxed text-white/70">{type.summary}</p>
               <p className="mt-5 font-heading text-4xl text-gold">
-                {formatUsd(type.startingPriceCents)}
+                {type.startingPriceCents > 0 ? formatUsd(type.startingPriceCents) : "Monthly"}
                 <span className="ml-2 text-sm font-sans font-medium uppercase tracking-wide text-white/60">
-                  starting · {type.priceQualifier}
+                  {type.startingPriceCents > 0 ? `starting · ${type.priceQualifier}` : type.priceQualifier}
                 </span>
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">

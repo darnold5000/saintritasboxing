@@ -115,6 +115,14 @@ export function localBusinessSchema() {
             areaServed: "Mooresville, Indiana",
           },
         },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Unlimited monthly adult and youth weekday classes",
+            areaServed: "Mooresville, Indiana",
+          },
+        },
       ],
     },
   };

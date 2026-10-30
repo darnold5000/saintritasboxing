@@ -7,9 +7,12 @@ import { TimeGrid } from "@/components/booking/time-grid";
 import { Button } from "@/components/ui/button";
 import {
   TRAINING_TYPES,
+  TRAINING_TYPE_IDS,
   formatUsd,
+  isClassTraining,
   packageOfferingsForType,
   singleOfferingForType,
+  subscriptionOfferingForType,
   type TrainingTypeId,
 } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
@@ -29,7 +32,13 @@ type CreditLookup = {
   configured: boolean;
 };
 
-type PaymentMethod = "use_credit" | "pay_single" | "buy_package";
+type PaymentMethod = "use_credit" | "pay_single" | "buy_package" | "start_membership";
+
+function parseTrainingType(value: string | null): TrainingTypeId {
+  return TRAINING_TYPE_IDS.includes(value as TrainingTypeId)
+    ? (value as TrainingTypeId)
+    : "private";
+}
 
 const EMPTY = {
   fullName: "",
@@ -55,20 +64,29 @@ export function BookingExperience({
   const today = todayISO();
 
   const typeParam = params.get("type");
-  const trainingType: TrainingTypeId = typeParam === "partner" ? "partner" : "private";
+  const trainingType = parseTrainingType(typeParam);
+  const classPlan = isClassTraining(trainingType);
   const singleOffering = singleOfferingForType(trainingType);
   const packages = packageOfferingsForType(trainingType);
+  const membership = subscriptionOfferingForType(trainingType);
   const verifyToken = params.get("token");
 
   const [weekISO, setWeekISO] = useState(startOfWeek(today));
   const [date, setDate] = useState<string | null>(params.get("date") ?? initialDates[0] ?? null);
   const [time, setTime] = useState<string | null>(params.get("time"));
   const [times, setTimes] = useState<string[]>([]);
-  const available = useMemo(() => new Set(initialDates), [initialDates]);
+  const [openDates, setOpenDates] = useState<string[] | null>(null);
+  const available = useMemo(
+    () => new Set(openDates ?? initialDates),
+    [openDates, initialDates],
+  );
   const [step, setStep] = useState<"schedule" | "details">(
     verifyToken && params.get("date") && params.get("time") ? "details" : "schedule",
   );
-  const [customer, setCustomer] = useState(EMPTY);
+  const [customer, setCustomer] = useState({
+    ...EMPTY,
+    isMinor: parseTrainingType(params.get("type")) === "youth-class",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -76,7 +94,7 @@ export function BookingExperience({
   const [creditLookup, setCreditLookup] = useState<CreditLookup | null>(null);
   const [creditLookupLoading, setCreditLookupLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    verifyToken ? "use_credit" : "pay_single",
+    verifyToken ? "use_credit" : classPlan ? "start_membership" : "pay_single",
   );
   const [packageOfferingId, setPackageOfferingId] = useState(
     packages[0]?.id ?? "",
@@ -91,9 +109,11 @@ export function BookingExperience({
     ? "Email verified — confirm below to book with your credit."
     : "";
 
-  const creditOptionDetail = useMemo(() => {
+  const creditOptionDetail = (() => {
     if (!emailValid) {
-      return "Package credits stay on the email you used at checkout. Enter that email above to see your balance.";
+      return isClassTraining(trainingType)
+        ? "An active adult or youth membership stays on the email used at checkout. Enter that email to see if this class is included."
+        : "Package credits stay on the email you used at checkout. Enter that email above to see your balance.";
     }
     if (creditLookupBusy && !creditLookup) {
       return "Checking credits for this email…";
@@ -108,23 +128,40 @@ export function BookingExperience({
       const n = creditLookupDisplay.remaining ?? 0;
       return `${n} session${n === 1 ? "" : "s"} left for ${typeMeta.shortName} on this email.`;
     }
+    if (creditLookup && isClassTraining(trainingType)) {
+      return "No active membership for this class on this email. Start monthly billing below.";
+    }
     if (creditLookup) {
       return "No remaining credits for this training type on this email. Pay for this session or buy a package below.";
     }
     return "Checking credits for this email…";
-  }, [
-    creditLookup,
-    creditLookupDisplay,
-    creditLookupBusy,
-    emailValid,
-    typeMeta.shortName,
-  ]);
+  })();
 
   useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/availability?type=${trainingType}`)
+      .then((res) => res.json())
+      .then((body: { dates?: string[] }) => {
+        if (!cancelled) setOpenDates(body.dates ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setOpenDates(null);
+      });
     const first = date ?? initialDates[0];
-    if (first) void loadTimes(first);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (first) {
+      void fetch(`/api/availability?date=${first}&type=${trainingType}`)
+        .then((res) => res.json())
+        .then((body: AvailabilityResponse) => {
+          if (!cancelled) setTimes(body.times ?? []);
+        })
+        .catch(() => {
+          if (!cancelled) setTimes([]);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [trainingType, date, initialDates]);
 
   useEffect(() => {
     if (!emailValid) return;
@@ -170,13 +207,20 @@ export function BookingExperience({
     setTime(null);
     setTimes([]);
     setStep("schedule");
-    setPaymentMethod("pay_single");
+    setPaymentMethod(isClassTraining(next) ? "start_membership" : "pay_single");
     setPackageOfferingId(packageOfferingsForType(next)[0]?.id ?? "");
+    setCustomer((current) => ({
+      ...current,
+      isMinor: next === "youth-class",
+      partnerName: next === "partner" ? current.partnerName : "",
+    }));
     setQueryType(next);
   }
 
   async function loadTimes(nextDate: string) {
-    const res = await fetch(`/api/availability?date=${nextDate}`);
+    const res = await fetch(
+      `/api/availability?date=${nextDate}&type=${trainingType}`,
+    );
     const body = (await res.json()) as AvailabilityResponse;
     setTimes(body.times ?? []);
     if (time && !(body.times ?? []).includes(time)) setTime(null);
@@ -198,6 +242,7 @@ export function BookingExperience({
   }
 
   function checkoutOfferingId(): string | null {
+    if (paymentMethod === "start_membership") return membership?.id ?? null;
     if (paymentMethod === "pay_single") return singleOffering?.id ?? null;
     if (paymentMethod === "buy_package") return packageOfferingId || null;
     return null;
@@ -211,7 +256,11 @@ export function BookingExperience({
       return;
     }
 
-    const nextErrors = validateCustomerInput({ ...customer, trainingType });
+    const bookingCustomer = {
+      ...customer,
+      isMinor: trainingType === "youth-class" ? true : trainingType === "adult-class" ? false : customer.isMinor,
+    };
+    const nextErrors = validateCustomerInput({ ...bookingCustomer, trainingType });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -222,8 +271,15 @@ export function BookingExperience({
       !creditLookup.hasCredit
     ) {
       setServerError(
-        "No session credits on this email for this training type. Pay for this session or buy a package.",
+        classPlan
+          ? "No active membership for this class on this email."
+          : "No session credits on this email for this training type. Pay for this session or buy a package.",
       );
+      return;
+    }
+
+    if (paymentMethod === "start_membership" && (membership?.priceCents ?? 0) <= 0) {
+      setServerError("The monthly class rate is not set yet. It can be added in the catalog before checkout.");
       return;
     }
 
@@ -239,7 +295,7 @@ export function BookingExperience({
               trainingType,
               sessionDate: date,
               startTime: time,
-              customer,
+              customer: bookingCustomer,
             }),
           });
           const body = (await res.json()) as { error?: string; ok?: boolean };
@@ -258,7 +314,7 @@ export function BookingExperience({
             trainingType,
             sessionDate: date,
             startTime: time,
-            customer,
+            customer: bookingCustomer,
           }),
         });
         const body = (await res.json()) as {
@@ -294,7 +350,7 @@ export function BookingExperience({
           offeringId,
           sessionDate: date,
           startTime: time,
-          customer,
+          customer: bookingCustomer,
         }),
       });
       const body = (await res.json()) as { error?: string; url?: string; demo?: boolean; message?: string };
@@ -321,11 +377,21 @@ export function BookingExperience({
   const summaryBilling =
     paymentMethod === "use_credit"
       ? {
-          label: creditLookupDisplay?.unlimitedActive ? "Plan" : "Session credit",
-          value: creditLookupDisplay?.unlimitedActive
-            ? "Monthly unlimited · no charge for this session"
+          label: creditLookupDisplay?.unlimitedActive || classPlan ? "Plan" : "Session credit",
+          value: creditLookupDisplay?.unlimitedActive || classPlan
+            ? classPlan
+              ? "Monthly class membership · no charge for this class"
+              : "Monthly unlimited · no charge for this session"
             : "1 package credit · no card charge today",
         }
+      : paymentMethod === "start_membership"
+        ? {
+            label: "Membership",
+            value:
+              membership && membership.priceCents > 0
+                ? `${formatUsd(membership.priceCents)}/month until cancelled`
+                : "Monthly rate not set yet",
+          }
       : paymentMethod === "pay_single"
         ? {
             label: "Payment",
@@ -341,9 +407,15 @@ export function BookingExperience({
   const submitLabel =
     paymentMethod === "use_credit"
       ? verifyToken
-        ? "Confirm booking with credit"
-        : "Email me to confirm with credit"
-      : "Continue to payment";
+        ? classPlan
+          ? "Confirm class with membership"
+          : "Confirm booking with credit"
+        : classPlan
+          ? "Email me to confirm this class"
+          : "Email me to confirm with credit"
+      : paymentMethod === "start_membership"
+        ? "Continue to monthly checkout"
+        : "Continue to payment";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
@@ -430,6 +502,17 @@ export function BookingExperience({
                   onChange={(value) => setCustomer({ ...customer, partnerName: value })}
                 />
               ) : null}
+              {trainingType === "adult-class" ? (
+                <p className="text-sm text-white/70">
+                  Adult weekday classes. Youth clients need the youth membership.
+                </p>
+              ) : null}
+              {trainingType === "youth-class" ? (
+                <p className="text-sm text-white/70">
+                  Youth weekday classes (under 18). A parent or guardian is required.
+                </p>
+              ) : null}
+              {trainingType !== "adult-class" && trainingType !== "youth-class" ? (
               <label className="flex items-center gap-2 text-sm text-white/80">
                 <input
                   type="checkbox"
@@ -438,9 +521,10 @@ export function BookingExperience({
                     setCustomer({ ...customer, isMinor: event.target.checked })
                   }
                 />
-                This session is for a minor
+                This session is for a youth (under 18)
               </label>
-              {customer.isMinor ? (
+              ) : null}
+              {customer.isMinor || trainingType === "youth-class" ? (
                 <>
                   <Field
                     label="Parent / guardian name"
@@ -480,6 +564,27 @@ export function BookingExperience({
                 How would you like to pay?
               </p>
               <div className="mt-4 space-y-2">
+                {classPlan ? (
+                  <>
+                    <PaymentOption
+                      checked={paymentMethod === "use_credit"}
+                      onChange={() => setPaymentMethod("use_credit")}
+                      title="Use monthly membership"
+                      detail={creditOptionDetail}
+                    />
+                    <PaymentOption
+                      checked={paymentMethod === "start_membership"}
+                      onChange={() => setPaymentMethod("start_membership")}
+                      title="Start unlimited monthly"
+                      detail={
+                        membership && membership.priceCents > 0
+                          ? `${formatUsd(membership.priceCents)}/month until you cancel. This class is included.`
+                          : "Recurring monthly until cancelled. The monthly rate still needs to be set."
+                      }
+                    />
+                  </>
+                ) : (
+                  <>
                 <PaymentOption
                   checked={paymentMethod === "use_credit"}
                   onChange={() => setPaymentMethod("use_credit")}
@@ -498,6 +603,8 @@ export function BookingExperience({
                   title="Buy a package & book this session"
                   detail="Pay for a package now. One session is used for this appointment; the rest stay on your account."
                 />
+                  </>
+                )}
               </div>
               {paymentMethod === "buy_package" ? (
                 <div className="mt-3 space-y-2">

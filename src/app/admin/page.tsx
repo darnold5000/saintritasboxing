@@ -1,4 +1,5 @@
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
+import { BookingClientCell } from "@/components/admin/client-identity";
 import { listAdminBookings, SAMPLE_BOOKINGS } from "@/lib/data/bookings";
 import { formatLongDate, formatTime } from "@/lib/dates";
 
@@ -15,7 +16,7 @@ export default async function AdminHomePage() {
           <thead className="bg-muted text-xs uppercase tracking-wide">
             <tr>
               <th className="px-3 py-2">When</th>
-              <th className="px-3 py-2">Customer</th>
+              <th className="px-3 py-2">Client</th>
               <th className="px-3 py-2">Training</th>
               <th className="px-3 py-2">Payment</th>
               <th className="px-3 py-2">Status</th>
@@ -29,7 +30,7 @@ export default async function AdminHomePage() {
                   {row.start_time ? formatTime(String(row.start_time).slice(0, 5)) : ""}
                 </td>
                 <td className="px-3 py-2">
-                  {customerName(row)}
+                  <BookingClientCell customers={row.customers} />
                 </td>
                 <td className="px-3 py-2">{String(row.offering_name)}</td>
                 <td className="px-3 py-2">{String(row.payment_status)}</td>
@@ -41,13 +42,4 @@ export default async function AdminHomePage() {
       </div>
     </section>
   );
-}
-
-function customerName(row: { customers?: unknown }) {
-  const customers = row.customers as
-    | { full_name?: string; email?: string }
-    | { full_name?: string; email?: string }[]
-    | null;
-  const record = Array.isArray(customers) ? customers[0] : customers;
-  return record?.full_name ?? record?.email ?? "—";
 }

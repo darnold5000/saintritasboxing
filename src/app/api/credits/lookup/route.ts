@@ -42,8 +42,7 @@ export async function POST(request: Request) {
   }
 
   const usable = pickCreditForType(credits, parsed.data.trainingType);
-  const unlimitedActive =
-    parsed.data.trainingType === "private" && credits.unlimitedActive;
+  const unlimitedActive = Boolean(usable?.unlimitedActive);
 
   return NextResponse.json({
     configured: true,

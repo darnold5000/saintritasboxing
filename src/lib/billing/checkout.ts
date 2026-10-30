@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { SITE } from "@/lib/site";
 import { TABLES } from "@/lib/tables";
-import { offeringById, type CatalogOffering } from "@/lib/catalog";
+import { offeringById, TRAINING_TYPES, type CatalogOffering } from "@/lib/catalog";
 import { checkoutMode } from "@/lib/booking-rules";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -35,6 +35,13 @@ export async function createOfferingCheckout(input: {
   const offering = offeringById(input.offeringId);
   if (!offering) {
     return { ok: false as const, code: "INVALID_OFFERING", error: "Unknown training option." };
+  }
+  if (offering.priceCents <= 0) {
+    return {
+      ok: false as const,
+      code: "PRICE_UNSET",
+      error: "This monthly rate is not set yet. Ask the gym before checkout.",
+    };
   }
   if (offering.kind === "single" && (!input.sessionDate || !input.startTime)) {
     return {
@@ -167,8 +174,8 @@ export async function createOfferingCheckout(input: {
 }
 
 function offeringLabel(offering: CatalogOffering) {
-  const type = offering.trainingType === "private" ? "1-on-1" : "2-on-1";
-  return `${type} ${offering.name}`;
+  const type = TRAINING_TYPES[offering.trainingType].shortName;
+  return `${type} — ${offering.name}`;
 }
 
 export async function createCustomerPortal(customerEmail: string) {

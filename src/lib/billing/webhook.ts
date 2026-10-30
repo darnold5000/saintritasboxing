@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { TABLES } from "@/lib/tables";
-import { offeringById } from "@/lib/catalog";
+import { offeringById, TRAINING_TYPES, type TrainingTypeId } from "@/lib/catalog";
 import { formatLongDate, formatTime } from "@/lib/dates";
 import { createServiceClient } from "@/lib/supabase/server";
 import { notifyOwner, sendTransactionalEmail } from "@/lib/email/send";
@@ -9,7 +9,6 @@ import {
   customerPurchaseEmail,
   ownerBookingEmail,
 } from "@/lib/email/templates";
-import { TRAINING_TYPES } from "@/lib/catalog";
 
 export async function processStripeEvent(event: Stripe.Event) {
   const db = createServiceClient();
@@ -110,7 +109,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   await sendConfirmationEmails(String(purchase.customer_id), {
     offeringName: String(purchase.name),
-    trainingType: String(purchase.training_type) as "private" | "partner",
+    trainingType: String(purchase.training_type) as TrainingTypeId,
     sessions: offering?.sessions ?? null,
     priceCents: Number(purchase.amount_cents),
     bookingId: session.metadata?.bookingId || null,
@@ -140,7 +139,7 @@ async function sendConfirmationEmails(
   customerIdValue: string,
   details: {
     offeringName: string;
-    trainingType: "private" | "partner";
+    trainingType: TrainingTypeId;
     sessions: number | null;
     priceCents: number;
     bookingId: string | null;

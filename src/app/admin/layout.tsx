@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { getStaffSession } from "@/lib/auth/staff";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -15,13 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <p className="font-heading text-lg text-foreground">Staff admin</p>
-          <nav className="flex flex-wrap gap-4 text-sm font-semibold">
-            <Link href="/admin">Dashboard</Link>
-            <Link href="/admin/bookings">Bookings</Link>
-            <Link href="/admin/availability">Availability</Link>
-            <Link href="/admin/customers">Customers</Link>
-            <Link href="/">View site</Link>
-          </nav>
+          <AdminNav />
         </div>
       </div>
       {!configured ? (

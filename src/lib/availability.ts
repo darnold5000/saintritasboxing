@@ -37,6 +37,8 @@ export type AvailabilityConfig = {
   extraSlots: Array<{ date: string; time: string }>;
   durationMinutes: number;
   bookedSlots: Array<{ date: string; time: string }>;
+  /** Class memberships only open Monday–Friday. */
+  weekdaysOnly?: boolean;
 };
 
 export function slotTimesForHours(
@@ -69,6 +71,7 @@ export function openingsForDate(
 ): string[] {
   if (config.blockedDates.includes(date)) return [];
   const weekday = weekdayIndex(date);
+  if (config.weekdaysOnly && (weekday === 0 || weekday === 6)) return [];
   const hours = config.weekly[weekday] ?? { enabled: false, start: "09:00", end: "17:00" };
   const base = slotTimesForHours(hours, config.durationMinutes);
   const extras = config.extraSlots

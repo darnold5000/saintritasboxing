@@ -11,12 +11,12 @@ type Purchase = {
   kind: string;
 };
 
-export function CustomerCreditsAdmin({
-  customerId,
-  customerName,
+export function ClientCreditsAdmin({
+  clientId,
+  clientName,
 }: {
-  customerId: string;
-  customerName: string;
+  clientId: string;
+  clientName: string;
 }) {
   const [open, setOpen] = useState(false);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -27,7 +27,7 @@ export function CustomerCreditsAdmin({
   async function load() {
     setLoading(true);
     setMessage("");
-    const res = await fetch(`/api/admin/customers/credits?customerId=${customerId}`);
+    const res = await fetch(`/api/admin/clients/credits?clientId=${clientId}`);
     const body = (await res.json()) as { purchases?: Purchase[]; error?: string };
     setLoading(false);
     if (!res.ok) {
@@ -44,7 +44,7 @@ export function CustomerCreditsAdmin({
       return;
     }
     setMessage("");
-    const res = await fetch("/api/admin/customers/credits", {
+    const res = await fetch("/api/admin/clients/credits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ purchaseId, delta, reason: reason.trim() }),
@@ -72,7 +72,7 @@ export function CustomerCreditsAdmin({
       {open ? (
         <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {customerName}
+            {clientName}
           </p>
           {purchases.length === 0 ? (
             <p className="mt-2 text-sm">No paid packages with session credits.</p>

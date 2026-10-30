@@ -6,6 +6,7 @@ import {
   type WeekdayHours,
   DEFAULT_WEEKLY_HOURS,
 } from "@/lib/availability";
+import { isClassTraining, type TrainingTypeId } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
 import { TABLES } from "@/lib/tables";
 import { todayISO } from "@/lib/dates";
@@ -70,17 +71,23 @@ export async function loadAvailabilityConfig(): Promise<{
   };
 }
 
-export async function getOpenings(date: string) {
+export async function getOpenings(date: string, trainingType?: TrainingTypeId | null) {
   const { config, demo } = await loadAvailabilityConfig();
-  return { times: openingsForDate(date, config), demo };
+  const next = trainingType && isClassTraining(trainingType) ? { ...config, weekdaysOnly: true } : config;
+  return { times: openingsForDate(date, next), demo };
 }
 
-export async function getOpenDates(days = 60) {
+export async function getOpenDates(days = 60, trainingType?: TrainingTypeId | null) {
   const { config, demo } = await loadAvailabilityConfig();
-  return { dates: datesWithOpenings(todayISO(), days, config), demo };
+  const next = trainingType && isClassTraining(trainingType) ? { ...config, weekdaysOnly: true } : config;
+  return { dates: datesWithOpenings(todayISO(), days, next), demo };
 }
 
-export async function isSlotAvailable(date: string, time: string) {
-  const { times } = await getOpenings(date);
+export async function isSlotAvailable(
+  date: string,
+  time: string,
+  trainingType?: TrainingTypeId | null,
+) {
+  const { times } = await getOpenings(date, trainingType);
   return times.includes(time);
 }

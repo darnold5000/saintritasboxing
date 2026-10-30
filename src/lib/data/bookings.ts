@@ -20,7 +20,11 @@ export type BookingInsert = {
 
 export async function createBooking(input: BookingInsert) {
   if (input.sessionDate && input.startTime) {
-    const open = await isSlotAvailable(input.sessionDate, input.startTime);
+    const open = await isSlotAvailable(
+      input.sessionDate,
+      input.startTime,
+      input.offering.trainingType,
+    );
     if (!open) {
       throw new Error("That time is no longer available.");
     }
@@ -69,7 +73,7 @@ export async function listAdminBookings() {
   const { data, error } = await db
     .from(TABLES.bookings)
     .select(
-      "id, session_date, start_time, training_type, offering_name, status, payment_status, partner_name, created_at, customers:customer_id(full_name, email, phone)",
+      "id, session_date, start_time, training_type, offering_name, status, payment_status, partner_name, created_at, customers:customer_id(full_name, email, phone, is_minor, guardian_name, guardian_email, guardian_phone)",
     )
     .order("session_date", { ascending: true })
     .order("start_time", { ascending: true });
@@ -86,6 +90,8 @@ export async function updateBookingStatus(
   if (error) throw new Error(error.message);
 }
 
+export { clientNameFromBookingRow } from "@/lib/admin/client-display";
+
 export const SAMPLE_BOOKINGS = [
   {
     id: "demo-1",
@@ -95,7 +101,15 @@ export const SAMPLE_BOOKINGS = [
     offering_name: "Single Session",
     status: "confirmed",
     payment_status: "paid",
-    customers: { full_name: "Sample Client", email: "demo@example.com", phone: "(555) 010-0100" },
+    customers: {
+      full_name: "Jordan Lee",
+      email: "youth@example.com",
+      phone: "(555) 010-0100",
+      is_minor: true,
+      guardian_name: "Taylor Lee",
+      guardian_email: "parent@example.com",
+      guardian_phone: "(555) 010-0199",
+    },
   },
   {
     id: "demo-2",

@@ -1,14 +1,14 @@
 import { TABLES } from "@/lib/tables";
 import { createServiceClient } from "@/lib/supabase/server";
 
-export async function listCustomerPurchases(customerId: string) {
+export async function listClientPurchases(clientId: string) {
   const db = createServiceClient();
   const { data, error } = await db
     .from(TABLES.purchases)
     .select(
       "id, offering_id, training_type, name, kind, sessions_total, sessions_remaining, status",
     )
-    .eq("customer_id", customerId)
+    .eq("customer_id", clientId)
     .eq("status", "paid")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);

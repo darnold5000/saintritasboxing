@@ -30,12 +30,12 @@ export function canBookWithCredits(
   trainingType: TrainingTypeId,
 ) {
   if (account.trainingType !== trainingType) return false;
-  if (account.unlimitedActive && trainingType === "private") return true;
+  if (account.unlimitedActive) return true;
   return account.remaining >= creditsDeductedPerBooking(trainingType);
 }
 
 export function remainingAfterBooking(account: CreditAccount, trainingType: TrainingTypeId) {
-  if (account.unlimitedActive && trainingType === "private") return account.remaining;
+  if (account.unlimitedActive) return account.remaining;
   return Math.max(0, account.remaining - creditsDeductedPerBooking(trainingType));
 }
 
@@ -73,7 +73,13 @@ export function validateCustomerInput(input: {
   if (partnerRequiresSecondName(input.trainingType) && !input.partnerName?.trim()) {
     errors.partnerName = "Enter the second participant’s name.";
   }
-  if (input.isMinor) {
+  if (input.trainingType === "youth-class" && !input.isMinor) {
+    errors.isMinor = "Youth class is for clients under 18. Include a parent or guardian.";
+  }
+  if (input.trainingType === "adult-class" && input.isMinor) {
+    errors.isMinor = "Adult class is for adults. Choose youth class for anyone under 18.";
+  }
+  if (input.isMinor || input.trainingType === "youth-class") {
     if (!input.guardianName?.trim()) {
       errors.guardianName = "Enter a parent or guardian name.";
     }

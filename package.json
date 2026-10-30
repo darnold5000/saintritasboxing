@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "npx tsx --test src/lib/catalog.test.ts src/lib/availability.test.ts src/lib/booking-rules.test.ts src/lib/seo.test.ts",
+    "db:migrate": "npx tsx scripts/db-migrate.ts",
     "db:staff": "npx tsx scripts/db-staff.ts"
   },
   "dependencies": {
@@ -30,12 +31,16 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "pg": "^8.23.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ws": "^8.22.0"
   }
 }

@@ -1,6 +1,8 @@
+/** Supabase service client for CLI scripts. Node 20 needs `ws` for Realtime init. */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import ws from "ws";
 
 function loadEnvLocal() {
   const path = resolve(process.cwd(), ".env.local");
@@ -35,5 +37,6 @@ export function createServiceScriptClient(): SupabaseClient {
   }
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { transport: ws as unknown as typeof WebSocket },
   });
 }

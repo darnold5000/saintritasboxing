@@ -4,6 +4,7 @@ import {
   OFFERINGS,
   creditsDeductedPerBooking,
   formatUsd,
+  membershipCoversTraining,
   packageSavings,
   REGISTRATION_FEE,
 } from "./catalog";
@@ -32,6 +33,14 @@ describe("St. Rita catalog", () => {
     assert.equal(partnerFive?.savedCents, 2500);
     const partnerTen = packageSavings(OFFERINGS.find((item) => item.id === "partner-10")!);
     assert.equal(partnerTen?.savedCents, 10000);
+  });
+
+  it("keeps class memberships on their own training type", () => {
+    assert.equal(membershipCoversTraining("class-adult-unlimited", "adult-class"), true);
+    assert.equal(membershipCoversTraining("class-youth-unlimited", "youth-class"), true);
+    assert.equal(membershipCoversTraining("class-adult-unlimited", "youth-class"), false);
+    assert.equal(membershipCoversTraining("private-unlimited", "adult-class"), false);
+    assert.equal(membershipCoversTraining("class-adult-unlimited", "private"), false);
   });
 
   it("deducts one partner credit per booking", () => {

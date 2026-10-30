@@ -1,4 +1,4 @@
-export const TRAINING_TYPE_IDS = ["private", "partner"] as const;
+export const TRAINING_TYPE_IDS = ["private", "partner", "adult-class", "youth-class"] as const;
 export type TrainingTypeId = (typeof TRAINING_TYPE_IDS)[number];
 
 export const PACKAGE_KIND = ["single", "package", "subscription"] as const;
@@ -13,6 +13,8 @@ export type TrainingType = {
   startingPriceCents: number;
   priceQualifier: string;
   participants: 1 | 2;
+  /** Weekday group class. Adult and youth memberships do not cross. */
+  classMembership?: boolean;
 };
 
 export type CatalogOffering = {
@@ -49,6 +51,30 @@ export const TRAINING_TYPES: Record<TrainingTypeId, TrainingType> = {
     startingPriceCents: 7000,
     priceQualifier: "total for two",
     participants: 2,
+  },
+  "adult-class": {
+    id: "adult-class",
+    name: "Adult Unlimited Monthly",
+    shortName: "Adult class",
+    eyebrow: "Weekday classes",
+    summary:
+      "Recurring monthly membership for adult weekday classes. Cancel anytime. This plan does not cover youth classes or private sessions.",
+    startingPriceCents: 0,
+    priceQualifier: "per month",
+    participants: 1,
+    classMembership: true,
+  },
+  "youth-class": {
+    id: "youth-class",
+    name: "Youth Unlimited Monthly",
+    shortName: "Youth class",
+    eyebrow: "Weekday classes",
+    summary:
+      "Recurring monthly membership for youth weekday classes (under 18). A parent or guardian is required. This plan does not cover adult classes or private sessions.",
+    startingPriceCents: 0,
+    priceQualifier: "per month",
+    participants: 1,
+    classMembership: true,
   },
 };
 
@@ -145,6 +171,30 @@ export const OFFERINGS: CatalogOffering[] = [
     description:
       "Ten partner sessions. One credit covers both participants. Price is TOTAL.",
   },
+  {
+    id: "class-adult-unlimited",
+    trainingType: "adult-class",
+    kind: "subscription",
+    name: "Unlimited Monthly",
+    sessions: null,
+    priceCents: 0,
+    interval: "month",
+    cta: "Join monthly",
+    description:
+      "Weekday adult classes, billed every month until you cancel in the Stripe customer portal. Set the monthly amount in the catalog before checkout.",
+  },
+  {
+    id: "class-youth-unlimited",
+    trainingType: "youth-class",
+    kind: "subscription",
+    name: "Unlimited Monthly",
+    sessions: null,
+    priceCents: 0,
+    interval: "month",
+    cta: "Join monthly",
+    description:
+      "Weekday youth classes, billed every month until cancelled. Adult memberships cannot be used for youth class.",
+  },
 ];
 
 export const REGISTRATION_FEE = {
@@ -181,6 +231,18 @@ export function packageOfferingsForType(type: TrainingTypeId) {
   return OFFERINGS.filter(
     (item) => item.trainingType === type && item.kind === "package",
   );
+}
+
+export function subscriptionOfferingForType(type: TrainingTypeId) {
+  return OFFERINGS.find((item) => item.trainingType === type && item.kind === "subscription") ?? null;
+}
+
+export function isClassTraining(type: TrainingTypeId) {
+  return Boolean(TRAINING_TYPES[type].classMembership);
+}
+
+export function membershipCoversTraining(offeringId: string, type: TrainingTypeId) {
+  return subscriptionOfferingForType(type)?.id === offeringId;
 }
 
 export function formatUsd(cents: number) {

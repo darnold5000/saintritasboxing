@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { TABLES } from "@/lib/tables";
 import { createServiceClient } from "@/lib/supabase/server";
-import type { TrainingTypeId } from "@/lib/catalog";
+import { membershipCoversTraining, type TrainingTypeId } from "@/lib/catalog";
 
 export type CustomerRecord = {
   id: string;
@@ -88,6 +88,7 @@ export async function customerCredits(email: string) {
   return {
     customer: customer as CustomerRecord,
     purchases: purchases ?? [],
+    subscriptions: subscriptions ?? [],
     unlimitedActive: (subscriptions ?? []).some((row) => row.status === "active"),
   };
 }
@@ -144,7 +145,10 @@ export function pickCreditForType(
   credits: NonNullable<Awaited<ReturnType<typeof customerCredits>>>,
   trainingType: TrainingTypeId,
 ): UsableCredit | null {
-  if (trainingType === "private" && credits.unlimitedActive) {
+  const membership = (credits.subscriptions ?? []).find(
+    (row) => row.status === "active" && membershipCoversTraining(String(row.offering_id), trainingType),
+  );
+  if (membership) {
     return {
       purchaseId: null,
       trainingType,

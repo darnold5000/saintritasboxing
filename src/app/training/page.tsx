@@ -20,8 +20,8 @@ export default function TrainingPage() {
           Private boxing training near Mooresville.
         </h1>
         <p className="mt-4 max-w-2xl text-white/75">
-          This is personal coaching, not a drop-in class calendar. Book 1-on-1 or 2-on-1
-          sessions and work boxing, fitness, and confidence at SonShine Park.
+          This is personal coaching and weekday classes. Book 1-on-1, 2-on-1, or an
+          unlimited monthly adult or youth class at SonShine Park.
         </p>
       </section>
       <HomePurpose />

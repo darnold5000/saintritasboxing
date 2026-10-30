@@ -15,6 +15,14 @@ describe("availability", () => {
     assert.deepEqual(times, ["06:00", "07:00"]);
   });
 
+  it("closes class slots on weekends", () => {
+    const config = demoAvailabilityConfig();
+    config.weekdaysOnly = true;
+    const saturday = openingsForDate("2026-11-07", config, new Date("2026-11-01T12:00:00Z"));
+    assert.deepEqual(saturday, []);
+    const wednesday = openingsForDate("2026-11-04", config, new Date("2026-11-01T12:00:00Z"));
+    assert.equal(wednesday.length > 0, true);
+  });
   it("hides booked and blocked times", () => {
     const config = demoAvailabilityConfig([{ date: "2026-11-04", time: "09:00" }]);
     config.blockedDates = ["2026-11-05"];

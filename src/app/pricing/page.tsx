@@ -16,8 +16,9 @@ export default function PricingPage() {
         Training packages.
       </h1>
       <p className="mt-4 max-w-2xl text-white/75">
-        Prices come from the current St. Rita&apos;s flyer. Partner packages are billed as
-        one total for two people. The owner can change these in one catalog file.
+        Pick 1-on-1, 2-on-1, or a weekday class. Adult and youth unlimited plans are
+        separate monthly memberships. A membership only books that class. Prices for
+        private and partner sessions come from the flyer.
       </p>
       <div className="mt-10">
         <PackageCards />

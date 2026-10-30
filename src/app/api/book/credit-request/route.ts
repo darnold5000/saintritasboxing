@@ -60,7 +60,11 @@ export async function POST(request: Request) {
     });
   }
 
-  const open = await isSlotAvailable(parsed.data.sessionDate, parsed.data.startTime);
+  const open = await isSlotAvailable(
+    parsed.data.sessionDate,
+    parsed.data.startTime,
+    parsed.data.trainingType,
+  );
   if (!open) {
     return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
   }
