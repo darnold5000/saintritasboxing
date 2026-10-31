@@ -8,9 +8,8 @@ export default async function AdminTrainingPage() {
     <section>
       <h1 className="font-heading text-3xl">Training</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Pick a training type, then set the days and times it is offered. 1:1 and 2:1 keep the
-        default daily hours until you save a schedule here. Youth and adult classes only appear
-        on the days you add.
+        Pick a training type. Each day lists its classes. Add a start time and length, then save.
+        New classes are public. Hide a class to keep it off the booking page.
       </p>
       <TrainingSchedule initial={slotsByType} demo={demo} scheduleReady={scheduleReady} />
     </section>

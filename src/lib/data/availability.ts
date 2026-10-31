@@ -16,8 +16,11 @@ import {
 } from "@/lib/supabase/server";
 
 export type TrainingTime = {
+  id: string;
   weekday: number;
   start: string;
+  durationMinutes: number;
+  published: boolean;
 };
 
 export async function loadAvailabilityConfig(): Promise<{
@@ -39,7 +42,9 @@ export async function loadAvailabilityConfig(): Promise<{
       .from(TABLES.bookings)
       .select("session_date, start_time, status, expires_at")
       .in("status", ["held", "confirmed"]),
-    db.from(TABLES.trainingSlots).select("training_type, weekday, start_time"),
+    db.from(TABLES.trainingSlots).select(
+      "id, training_type, weekday, start_time, duration_minutes, published",
+    ),
   ]);
 
   const weekly: Record<number, WeekdayHours> = { ...DEFAULT_WEEKLY_HOURS };
@@ -71,8 +76,11 @@ export async function loadAvailabilityConfig(): Promise<{
       if (!TRAINING_TYPE_IDS.includes(type)) continue;
       const list = slotsByType[type] ?? [];
       list.push({
+        id: String(row.id),
         weekday: Number(row.weekday),
         start: String(row.start_time).slice(0, 5),
+        durationMinutes: Number(row.duration_minutes ?? 60),
+        published: row.published !== false,
       });
       slotsByType[type] = list;
     }
@@ -101,8 +109,9 @@ function configForType(
   trainingType?: TrainingTypeId | null,
 ) {
   if (!trainingType) return config;
-  const times = slotsByType[trainingType] ?? [];
-  if (times.length > 0) {
+  const times = (slotsByType[trainingType] ?? []).filter((slot) => slot.published);
+  const hasSchedule = (slotsByType[trainingType] ?? []).length > 0;
+  if (hasSchedule) {
     return { ...config, fixedTimes: times, weekdaysOnly: false };
   }
   if (isClassTraining(trainingType)) {
@@ -135,7 +144,7 @@ export async function isSlotAvailable(
 
 export async function replaceTrainingSlots(
   trainingType: TrainingTypeId,
-  slots: TrainingTime[],
+  slots: Array<Pick<TrainingTime, "weekday" | "start" | "durationMinutes" | "published">>,
 ) {
   const db = createServiceClient();
   const { error: clearError } = await db
@@ -145,17 +154,85 @@ export async function replaceTrainingSlots(
   if (clearError) throw new Error(clearError.message);
   if (slots.length === 0) return;
 
-  const unique = new Map<string, TrainingTime>();
+  const unique = new Map<string, (typeof slots)[number]>();
   for (const slot of slots) {
     const start = slot.start.slice(0, 5);
-    unique.set(`${slot.weekday}-${start}`, { weekday: slot.weekday, start });
+    unique.set(`${slot.weekday}-${start}`, { ...slot, start });
   }
   const { error } = await db.from(TABLES.trainingSlots).insert(
     Array.from(unique.values()).map((slot) => ({
       training_type: trainingType,
       weekday: slot.weekday,
       start_time: slot.start,
+      duration_minutes: slot.durationMinutes,
+      published: slot.published,
     })),
   );
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
+}
+
+export type TrainingSlotInput = {
+  trainingType: TrainingTypeId;
+  weekday: number;
+  start: string;
+  durationMinutes: number;
+  published: boolean;
+};
+
+function slotRow(input: TrainingSlotInput) {
+  return {
+    training_type: input.trainingType,
+    weekday: input.weekday,
+    start_time: input.start.slice(0, 5),
+    duration_minutes: input.durationMinutes,
+    published: input.published,
+  };
+}
+
+export async function createTrainingSlot(input: TrainingSlotInput): Promise<TrainingTime> {
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from(TABLES.trainingSlots)
+    .insert(slotRow(input))
+    .select("id, weekday, start_time, duration_minutes, published")
+    .single();
+  if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
+  return mapSlot(data);
+}
+
+export async function updateTrainingSlot(
+  id: string,
+  input: TrainingSlotInput,
+): Promise<TrainingTime> {
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from(TABLES.trainingSlots)
+    .update(slotRow(input))
+    .eq("id", id)
+    .select("id, weekday, start_time, duration_minutes, published")
+    .single();
+  if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
+  return mapSlot(data);
+}
+
+export async function deleteTrainingSlot(id: string) {
+  const db = createServiceClient();
+  const { error } = await db.from(TABLES.trainingSlots).delete().eq("id", id);
+  if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
+}
+
+function mapSlot(row: {
+  id: string;
+  weekday: number;
+  start_time: string;
+  duration_minutes: number;
+  published: boolean;
+}): TrainingTime {
+  return {
+    id: String(row.id),
+    weekday: Number(row.weekday),
+    start: String(row.start_time).slice(0, 5),
+    durationMinutes: Number(row.duration_minutes),
+    published: Boolean(row.published),
+  };
 }
