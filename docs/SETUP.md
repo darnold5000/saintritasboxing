@@ -6,7 +6,7 @@ Copy `.env.example` to `.env.local`. Use **this client's** credentials only.
 
 1. Create a project (or apply the `srb_` migration on the shared Signal Works database).
 2. Run migrations:
-   - **SQL editor:** paste and run `supabase/migrations/001_srb_foundation.sql`, then `002_srb_credit_adjustments.sql`, then `003_srb_reviews.sql`.
+   - **SQL editor:** paste and run the files in `supabase/migrations/` in numeric order, through `007_srb_coach_and_gallery.sql`.
    - **CLI:** `DATABASE_URL=postgresql://... npm run db:migrate`  
      On shared production (`gezdzzqnylloaxcmuzvm`), also set `SRB_MIGRATE_CONFIRM=gezdzzqnylloaxcmuzvm`.
 3. Disable public signup. Invite staff in Auth.

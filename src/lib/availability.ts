@@ -40,7 +40,12 @@ export type AvailabilityConfig = {
   /** Class memberships only open Monday–Friday when no explicit times are saved. */
   weekdaysOnly?: boolean;
   /** Exact weekly start times. When set, these replace the open-hours grid. */
-  fixedTimes?: Array<{ weekday: number; start: string }>;
+  fixedTimes?: Array<{
+    weekday: number;
+    start: string;
+    startsOn?: string | null;
+    endsOn?: string | null;
+  }>;
 };
 
 export function slotTimesForHours(
@@ -56,6 +61,17 @@ export function slotTimesForHours(
     if (times.length > 48) break;
   }
   return times;
+}
+
+export function fixedTimeRunsOn(
+  slot: { weekday: number; startsOn?: string | null; endsOn?: string | null },
+  date: string,
+  weekday: number,
+) {
+  if (slot.weekday !== weekday) return false;
+  if (slot.startsOn && date < slot.startsOn) return false;
+  if (slot.endsOn && date > slot.endsOn) return false;
+  return true;
 }
 
 export function isSlotInPast(date: string, time: string, now = new Date()) {
@@ -81,7 +97,7 @@ export function openingsForDate(
   );
   if (config.fixedTimes) {
     const times = config.fixedTimes
-      .filter((slot) => slot.weekday === weekday)
+      .filter((slot) => fixedTimeRunsOn(slot, date, weekday))
       .map((slot) => slot.start.slice(0, 5));
     return Array.from(new Set(times))
       .sort()

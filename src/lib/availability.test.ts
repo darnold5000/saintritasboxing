@@ -24,6 +24,17 @@ describe("availability", () => {
     assert.deepEqual(thursday, []);
   });
 
+  it("keeps a class inside its optional date window", () => {
+    const config = demoAvailabilityConfig();
+    config.fixedTimes = [
+      { weekday: 3, start: "18:30", startsOn: "2026-11-01", endsOn: "2026-11-30" },
+    ];
+    const now = new Date("2026-10-01T12:00:00Z");
+    assert.deepEqual(openingsForDate("2026-10-28", config, now), []);
+    assert.deepEqual(openingsForDate("2026-11-04", config, now), ["18:30"]);
+    assert.deepEqual(openingsForDate("2026-12-02", config, now), []);
+  });
+
   it("closes class slots on weekends", () => {
     const config = demoAvailabilityConfig();
     config.weekdaysOnly = true;

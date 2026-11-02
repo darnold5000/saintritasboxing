@@ -21,6 +21,8 @@ export type TrainingTime = {
   start: string;
   durationMinutes: number;
   published: boolean;
+  startsOn: string | null;
+  endsOn: string | null;
 };
 
 export async function loadAvailabilityConfig(): Promise<{
@@ -43,7 +45,7 @@ export async function loadAvailabilityConfig(): Promise<{
       .select("session_date, start_time, status, expires_at")
       .in("status", ["held", "confirmed"]),
     db.from(TABLES.trainingSlots).select(
-      "id, training_type, weekday, start_time, duration_minutes, published",
+      "id, training_type, weekday, start_time, duration_minutes, published, starts_on, ends_on",
     ),
   ]);
 
@@ -81,6 +83,8 @@ export async function loadAvailabilityConfig(): Promise<{
         start: String(row.start_time).slice(0, 5),
         durationMinutes: Number(row.duration_minutes ?? 60),
         published: row.published !== false,
+        startsOn: dateOrNull(row.starts_on),
+        endsOn: dateOrNull(row.ends_on),
       });
       slotsByType[type] = list;
     }
@@ -144,7 +148,9 @@ export async function isSlotAvailable(
 
 export async function replaceTrainingSlots(
   trainingType: TrainingTypeId,
-  slots: Array<Pick<TrainingTime, "weekday" | "start" | "durationMinutes" | "published">>,
+  slots: Array<
+    Pick<TrainingTime, "weekday" | "start" | "durationMinutes" | "published" | "startsOn" | "endsOn">
+  >,
 ) {
   const db = createServiceClient();
   const { error: clearError } = await db
@@ -166,6 +172,8 @@ export async function replaceTrainingSlots(
       start_time: slot.start,
       duration_minutes: slot.durationMinutes,
       published: slot.published,
+      starts_on: slot.startsOn,
+      ends_on: slot.endsOn,
     })),
   );
   if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
@@ -177,6 +185,8 @@ export type TrainingSlotInput = {
   start: string;
   durationMinutes: number;
   published: boolean;
+  startsOn: string | null;
+  endsOn: string | null;
 };
 
 function slotRow(input: TrainingSlotInput) {
@@ -186,6 +196,8 @@ function slotRow(input: TrainingSlotInput) {
     start_time: input.start.slice(0, 5),
     duration_minutes: input.durationMinutes,
     published: input.published,
+    starts_on: input.startsOn,
+    ends_on: input.endsOn,
   };
 }
 
@@ -194,7 +206,7 @@ export async function createTrainingSlot(input: TrainingSlotInput): Promise<Trai
   const { data, error } = await db
     .from(TABLES.trainingSlots)
     .insert(slotRow(input))
-    .select("id, weekday, start_time, duration_minutes, published")
+    .select("id, weekday, start_time, duration_minutes, published, starts_on, ends_on")
     .single();
   if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
   return mapSlot(data);
@@ -209,7 +221,7 @@ export async function updateTrainingSlot(
     .from(TABLES.trainingSlots)
     .update(slotRow(input))
     .eq("id", id)
-    .select("id, weekday, start_time, duration_minutes, published")
+    .select("id, weekday, start_time, duration_minutes, published, starts_on, ends_on")
     .single();
   if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
   return mapSlot(data);
@@ -221,12 +233,19 @@ export async function deleteTrainingSlot(id: string) {
   if (error) throw new Error(`${error.code ?? ""} ${error.message}`);
 }
 
+function dateOrNull(value: string | null | undefined) {
+  if (!value) return null;
+  return String(value).slice(0, 10);
+}
+
 function mapSlot(row: {
   id: string;
   weekday: number;
   start_time: string;
   duration_minutes: number;
   published: boolean;
+  starts_on?: string | null;
+  ends_on?: string | null;
 }): TrainingTime {
   return {
     id: String(row.id),
@@ -234,5 +253,7 @@ function mapSlot(row: {
     start: String(row.start_time).slice(0, 5),
     durationMinutes: Number(row.duration_minutes),
     published: Boolean(row.published),
+    startsOn: dateOrNull(row.starts_on),
+    endsOn: dateOrNull(row.ends_on),
   };
 }

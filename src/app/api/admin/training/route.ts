@@ -9,12 +9,35 @@ import {
 } from "@/lib/data/availability";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
 
-const slotSchema = z.object({
+const optionalDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  })
+  .nullable();
+
+const slotFields = z.object({
   trainingType: z.enum(TRAINING_TYPE_IDS),
   weekday: z.number().int().min(0).max(6),
   start: z.string().regex(/^\d{2}:\d{2}$/),
   durationMinutes: z.number().int().min(15).max(480),
   published: z.boolean(),
+  startsOn: optionalDate,
+  endsOn: optionalDate,
+});
+
+function datesInOrder(value: { startsOn: string | null; endsOn: string | null }) {
+  return !value.startsOn || !value.endsOn || value.endsOn >= value.startsOn;
+}
+
+const slotSchema = slotFields.refine(datesInOrder, {
+  message: "End date must be on or after the start date.",
+});
+const patchSchema = slotFields.extend({ id: z.string().uuid() }).refine(datesInOrder, {
+  message: "End date must be on or after the start date.",
 });
 
 async function requireStaff() {
@@ -31,8 +54,16 @@ function saveError(error: unknown) {
   if (message.includes("23505") || message.toLowerCase().includes("duplicate")) {
     return "That day already has a class at this time.";
   }
-  if (message.includes("srb_training_slots") || message.includes("duration_minutes")) {
-    return "Apply migrations 004 and 005, then try again.";
+  if (
+    message.includes("srb_training_slots") ||
+    message.includes("duration_minutes") ||
+    message.includes("starts_on") ||
+    message.includes("ends_on")
+  ) {
+    return "Apply migrations 004, 005, and 006, then try again.";
+  }
+  if (message.includes("date_range")) {
+    return "End date must be on or after the start date.";
   }
   return message;
 }
@@ -55,9 +86,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const denied = await requireStaff();
   if (denied) return denied;
-  const parsed = slotSchema
-    .extend({ id: z.string().uuid() })
-    .safeParse(await request.json().catch(() => null));
+  const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Check the time and length, then save again." }, { status: 400 });
   }

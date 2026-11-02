@@ -9,6 +9,8 @@ const LINKS = [
   { href: "/admin/training", label: "Training" },
   { href: "/admin/clients", label: "Clients" },
   { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/about", label: "About" },
+  { href: "/admin/gallery", label: "Gallery" },
 ];
 
 function linkActive(pathname: string, href: string, match?: "exact") {

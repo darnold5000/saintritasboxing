@@ -13,4 +13,6 @@ export const TABLES = {
   contactMessages: "srb_contact_messages",
   creditAdjustments: "srb_credit_adjustments",
   reviews: "srb_reviews",
+  coachProfile: "srb_coach_profile",
+  galleryImages: "srb_gallery_images",
 } as const;

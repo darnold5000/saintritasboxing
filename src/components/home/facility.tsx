@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { SITE } from "@/lib/site";
 
 const POINTS = [
@@ -32,9 +33,10 @@ export function HomeFacility() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-xs text-white/50">
-            Facility photos can be added in <code>public/images/facility/</code> when
-            they are available. We are using the official hornet branding until then.
+          <p className="mt-6 text-sm text-white/70">
+            <Link href="/gallery" className="font-semibold text-gold hover:text-white">
+              View the gallery
+            </Link>
           </p>
         </div>
         <div>

@@ -4,7 +4,7 @@ import { allowIndexing } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   if (!allowIndexing()) return [];
-  const pages = ["/", "/training", "/pricing", "/book", "/about", "/contact"];
+  const pages = ["/", "/training", "/pricing", "/book", "/about", "/gallery", "/contact"];
   return pages.map((path) => ({
     url: `${SITE.url}${path}`,
     lastModified: new Date(),

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { TrainingTypeId } from "@/lib/catalog";
 import type { TrainingTime } from "@/lib/data/availability";
-import { formatTime } from "@/lib/dates";
+import { formatTime, parseISODate } from "@/lib/dates";
 
 const TABS: { id: TrainingTypeId; label: string }[] = [
   { id: "private", label: "1:1" },
@@ -30,6 +30,8 @@ type FormState = {
   hours: string;
   minutes: string;
   published: boolean;
+  startsOn: string;
+  endsOn: string;
 };
 
 function splitDuration(total: number) {
@@ -37,6 +39,21 @@ function splitDuration(total: number) {
     hours: String(Math.floor(total / 60)),
     minutes: String(total % 60),
   };
+}
+
+function shortDate(iso: string) {
+  return parseISODate(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function dateWindowLabel(startsOn: string | null, endsOn: string | null) {
+  if (startsOn && endsOn) return `${shortDate(startsOn)} – ${shortDate(endsOn)}`;
+  if (startsOn) return `Starts ${shortDate(startsOn)}`;
+  if (endsOn) return `Ends ${shortDate(endsOn)}`;
+  return "";
 }
 
 function lengthLabel(total: number) {
@@ -79,6 +96,8 @@ export function TrainingSchedule({
       hours: "1",
       minutes: "0",
       published: true,
+      startsOn: "",
+      endsOn: "",
     });
   }
 
@@ -93,6 +112,8 @@ export function TrainingSchedule({
       hours: parts.hours,
       minutes: parts.minutes,
       published: slot.published,
+      startsOn: slot.startsOn ?? "",
+      endsOn: slot.endsOn ?? "",
     });
   }
 
@@ -114,6 +135,12 @@ export function TrainingSchedule({
       setMessage("Enter a start time and a length between 15 minutes and 8 hours.");
       return;
     }
+    const startsOn = form.startsOn || null;
+    const endsOn = form.endsOn || null;
+    if (startsOn && endsOn && endsOn < startsOn) {
+      setMessage("End date has to be on or after the start date. Both dates are optional.");
+      return;
+    }
     setSaving(true);
     setMessage("");
     const payload = {
@@ -122,6 +149,8 @@ export function TrainingSchedule({
       start: form.start,
       durationMinutes,
       published: form.published,
+      startsOn,
+      endsOn,
     };
     const res = await fetch("/api/admin/training", {
       method: form.id ? "PATCH" : "POST",
@@ -171,6 +200,8 @@ export function TrainingSchedule({
         start: slot.start,
         durationMinutes: slot.durationMinutes,
         published: !slot.published,
+        startsOn: slot.startsOn,
+        endsOn: slot.endsOn,
       }),
     });
     const body = (await res.json()) as { error?: string; slot?: TrainingTime };
@@ -193,7 +224,7 @@ export function TrainingSchedule({
       ) : null}
       {!demo && !scheduleReady ? (
         <p className="mb-4 rounded-md bg-amber-100 px-3 py-2 text-sm">
-          Apply migrations 004 and 005, then reload.
+          Apply migrations 004, 005, and 006, then reload.
         </p>
       ) : null}
       <div className="flex flex-wrap gap-1" role="tablist">
@@ -222,8 +253,8 @@ export function TrainingSchedule({
 
       <div className="mt-4 space-y-3 rounded-xl border border-border bg-white p-4">
         <p className="text-sm text-muted-foreground">
-          Add a class on a day, set the start time and length, then save. Public classes show on
-          the booking page. Hidden classes stay here for staff only.
+          Add a class on a day, set the start time and length, then save. Dates are optional.
+          Public is on by default. Turn the switch off to hide the class so nobody can book it.
         </p>
         {DAYS.map((label, weekday) => {
           const daySlots = rows
@@ -252,16 +283,16 @@ export function TrainingSchedule({
                     <div key={slot.id} className="flex flex-wrap items-center gap-2">
                       <p className={`text-sm ${slot.published ? "" : "text-muted-foreground"}`}>
                         {formatTime(slot.start)} · {lengthLabel(slot.durationMinutes)}
-                        {slot.published ? "" : " · Hidden"}
+                        {dateWindowLabel(slot.startsOn, slot.endsOn)
+                          ? ` · ${dateWindowLabel(slot.startsOn, slot.endsOn)}`
+                          : ""}
                       </p>
+                      <PublicSwitch
+                        published={slot.published}
+                        onToggle={() => void togglePublic(slot)}
+                      />
                       <IconButton label="Edit class" onClick={() => openEdit(slot)}>
                         <Pencil className="size-4" />
-                      </IconButton>
-                      <IconButton
-                        label={slot.published ? "Hide from public" : "Make public"}
-                        onClick={() => void togglePublic(slot)}
-                      >
-                        {slot.published ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </IconButton>
                       <IconButton label="Delete class" onClick={() => void remove(slot)}>
                         <Trash2 className="size-4" />
@@ -367,6 +398,33 @@ function ClassForm({
           className="mt-1 block w-20 rounded border border-border bg-white px-2 py-2 text-sm"
         />
       </label>
+      <label className="text-xs">
+        Start date <span className="text-muted-foreground">(optional)</span>
+        <input
+          type="date"
+          value={form.startsOn}
+          onChange={(event) => onChange({ ...form, startsOn: event.target.value })}
+          className="mt-1 block rounded border border-border bg-white px-2 py-2 text-sm"
+        />
+      </label>
+      <label className="text-xs">
+        End date <span className="text-muted-foreground">(optional)</span>
+        <input
+          type="date"
+          value={form.endsOn}
+          onChange={(event) => onChange({ ...form, endsOn: event.target.value })}
+          className="mt-1 block rounded border border-border bg-white px-2 py-2 text-sm"
+        />
+      </label>
+      <div className="pb-1">
+        <PublicSwitch
+          published={form.published}
+          onToggle={() => onChange({ ...form, published: !form.published })}
+        />
+      </div>
+      <p className="w-full text-xs text-muted-foreground">
+        Dates are optional. Leave both blank and this class repeats every week.
+      </p>
       <button
         type="button"
         onClick={onSave}
@@ -379,6 +437,33 @@ function ClassForm({
         Cancel
       </button>
     </div>
+  );
+}
+
+function PublicSwitch({
+  published,
+  onToggle,
+}: {
+  published: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={published}
+      onClick={onToggle}
+      className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-2 py-1 text-xs font-semibold"
+    >
+      <span
+        className={`relative h-5 w-9 rounded-full ${published ? "bg-emerald-500" : "bg-zinc-300"}`}
+      >
+        <span
+          className={`absolute top-0.5 size-4 rounded-full bg-white shadow ${published ? "left-4" : "left-0.5"}`}
+        />
+      </span>
+      {published ? "Public" : "Hidden"}
+    </button>
   );
 }
 
