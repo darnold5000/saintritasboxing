@@ -71,15 +71,15 @@ export function CoachAdmin({ coach }: { coach: CoachProfile }) {
           Bio
           <textarea
             value={bio}
-            rows={10}
+            rows={16}
             onChange={(event) => setBio(event.target.value)}
-            placeholder="Write the coach bio. Leave this blank until you have the wording."
+            placeholder="Coach bio"
             className="mt-1 w-full rounded-md border border-border px-3 py-2"
           />
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          A blank bio stays as a short note on the About page. A blank line between paragraphs
-          starts a new paragraph.
+          A blank line between paragraphs starts a new paragraph. The all-caps first line shows
+          as the tagline.
         </p>
         <button
           type="submit"
@@ -98,7 +98,7 @@ export function CoachAdmin({ coach }: { coach: CoachProfile }) {
           <img src={preview} alt="" className="mt-3 aspect-[4/5] w-full rounded-lg object-cover" />
         ) : (
           <div className="mt-3 flex aspect-[4/5] items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-sm text-muted-foreground">
-            Photo placeholder
+            Photo coming soon
           </div>
         )}
         <label className="mt-4 block text-sm">

@@ -1,6 +1,6 @@
 import { CoachSection } from "@/components/about/coach-section";
 import { Button } from "@/components/ui/button";
-import { EMPTY_COACH, getCoachProfile } from "@/lib/data/coach";
+import { EMPTY_COACH, getCoachProfile, withCoachDefaults } from "@/lib/data/coach";
 import { createMetadata } from "@/lib/seo";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
 
@@ -42,7 +42,7 @@ export default async function AboutPage() {
           </Button>
         </div>
       </section>
-      <CoachSection coach={coach} />
+      <CoachSection coach={withCoachDefaults(coach)} />
     </>
   );
 }

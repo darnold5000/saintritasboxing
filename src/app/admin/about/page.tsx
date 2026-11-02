@@ -1,5 +1,5 @@
 import { CoachAdmin } from "@/components/admin/coach-admin";
-import { EMPTY_COACH, coachErrorHint, getCoachProfile } from "@/lib/data/coach";
+import { EMPTY_COACH, coachErrorHint, getCoachProfile, withCoachDefaults } from "@/lib/data/coach";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
 
 export default async function AdminAboutPage() {
@@ -18,8 +18,8 @@ export default async function AdminAboutPage() {
     <section>
       <h1 className="font-heading text-3xl">About</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        This is the owner and coach block on the public About page. The photo sits on the
-        right. Leave the bio blank until you have the wording.
+        This is the owner and coach block on the public About page. Until a photo is
+        uploaded, the public page shows a framed Photo coming soon card.
       </p>
       {!live ? (
         <p className="mt-4 text-sm text-muted-foreground">
@@ -28,7 +28,7 @@ export default async function AdminAboutPage() {
       ) : loadError ? (
         <p className="mt-4 text-sm text-red-700">{loadError}</p>
       ) : (
-        <CoachAdmin coach={coach} />
+        <CoachAdmin coach={withCoachDefaults(coach)} />
       )}
     </section>
   );
