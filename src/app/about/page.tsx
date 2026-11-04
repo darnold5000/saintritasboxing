@@ -33,10 +33,7 @@ export default async function AboutPage() {
           boxing skill and real fitness — personalized instruction that builds strength,
           discipline, and confidence.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button href="/book" size="lg">
-            Book training
-          </Button>
+        <div className="mt-8">
           <Button href="/gallery" variant="outline" size="lg">
             View gallery
           </Button>
