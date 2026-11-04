@@ -19,18 +19,11 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
   const intro = paragraphs[0] ?? "";
   const rest = paragraphs.slice(1);
   const heading = coach.name.trim() || "George Blades";
-  const hasPhoto = Boolean(coach.photoUrl);
 
   return (
     <section className="border-t border-white/10">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
-        <div
-          className={
-            hasPhoto
-              ? "grid items-start gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:gap-14"
-              : undefined
-          }
-        >
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:gap-14">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Owner & head coach</p>
             <h2 className="mt-3 font-heading text-5xl leading-none text-white sm:text-6xl">{heading}</h2>
@@ -59,7 +52,7 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
               <p className="mt-10 max-w-3xl text-lg leading-8 text-white/85">{intro}</p>
             ) : null}
           </div>
-          {hasPhoto ? <PhotoFrame coach={coach} /> : null}
+          <PhotoFrame coach={coach} />
         </div>
 
         {rest.length > 0 ? (
@@ -74,33 +67,31 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
             ))}
           </div>
         ) : null}
-
-        <aside className="mt-12 max-w-3xl border border-gold/25 bg-white/[0.02] px-5 py-5 sm:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">From the archives</p>
-          <h3 className="mt-3 font-heading text-2xl text-white">Blades sharpens up</h3>
-          <p className="mt-3 text-sm leading-7 text-white/70">
-            An Orlando Sentinel feature documented George&apos;s early boxing career, his demanding
-            training routine, and his rise through the amateur ranks.
-          </p>
-        </aside>
       </div>
     </section>
   );
 }
 
 function PhotoFrame({ coach }: { coach: CoachProfile }) {
-  if (!coach.photoUrl) return null;
   return (
     <div className="mx-auto w-full max-w-md border border-gold/70 bg-ink p-2 lg:mx-0 lg:max-w-none">
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface">
-        <Image
-          src={coach.photoUrl}
-          alt={coach.name ? `${coach.name}, coach at St. Rita's Boxing` : "Coach at St. Rita's Boxing"}
-          fill
-          sizes="(min-width: 1024px) 40vw, 100vw"
-          className="object-cover"
-        />
-      </div>
+      {coach.photoUrl ? (
+        <div className="relative aspect-[4/5] overflow-hidden bg-surface">
+          <Image
+            src={coach.photoUrl}
+            alt={coach.name ? `${coach.name}, coach at St. Rita's Boxing` : "Coach at St. Rita's Boxing"}
+            fill
+            sizes="(min-width: 1024px) 40vw, 100vw"
+            className="object-cover"
+          />
+        </div>
+      ) : (
+        <div className="flex aspect-[4/5] flex-col items-center justify-center border border-gold/30 bg-surface px-8 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-gold">St. Rita&apos;s Boxing</p>
+          <p className="mt-8 font-heading text-4xl leading-none text-white sm:text-5xl">Photo</p>
+          <p className="mt-2 font-heading text-4xl leading-none text-gold sm:text-5xl">coming soon</p>
+        </div>
+      )}
     </div>
   );
 }
