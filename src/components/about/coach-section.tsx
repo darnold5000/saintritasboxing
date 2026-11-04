@@ -1,10 +1,25 @@
 import Image from "next/image";
 import type { CoachProfile } from "@/lib/data/coach";
 
-const HIGHLIGHTS = [
-  { figure: "2×", label: "Indiana Golden Gloves champion" },
-  { figure: "23", label: "Professional victories" },
-  { figure: "WBO", label: "World title challenger" },
+const CAREERS = [
+  {
+    title: "Amateur career",
+    note: "These amateur figures were reported in a historical newspaper article and may not represent final career totals.",
+    stats: [
+      { figure: "40–5", label: "Reported amateur record" },
+      { figure: "35", label: "Amateur knockouts" },
+      { figure: "2×", label: "Indiana Golden Gloves champion" },
+    ],
+  },
+  {
+    title: "Professional career",
+    note: null,
+    stats: [
+      { figure: "23", label: "Professional victories" },
+      { figure: "16", label: "Professional knockouts" },
+      { figure: "WBO", label: "World title challenger" },
+    ],
+  },
 ];
 
 function bioParagraphs(bio: string) {
@@ -33,19 +48,33 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
             <p className="mt-3 text-sm font-semibold text-white/70">{coach.roleTitle}</p>
           ) : null}
 
-          <ul className="mt-8 grid gap-3 sm:grid-cols-3">
-            {HIGHLIGHTS.map((item) => (
-              <li key={item.figure} className="min-w-0 border border-gold/40 bg-white/[0.03] px-4 py-4">
-                <p className="font-heading text-3xl leading-none text-gold">{item.figure}</p>
-                <p className="mt-2 text-[11px] font-bold uppercase leading-snug tracking-[0.14em] text-white">
-                  {item.label}
-                </p>
-              </li>
+          <div className="mt-8 space-y-6">
+            {CAREERS.map((group) => (
+              <div key={group.title}>
+                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold">{group.title}</h3>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {group.stats.map((item) => (
+                    <li
+                      key={item.label}
+                      className="min-w-0 border border-gold/40 bg-white/[0.03] px-4 py-3 shadow-[inset_3px_0_0_#6516A4]"
+                    >
+                      <p className="font-heading text-3xl leading-none text-gold">{item.figure}</p>
+                      <p className="mt-2 text-[11px] font-bold uppercase leading-snug tracking-[0.12em] text-white">
+                        {item.label}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                {group.note ? (
+                  <p className="mt-2 max-w-3xl text-xs leading-5 text-white/50">{group.note}</p>
+                ) : null}
+              </div>
             ))}
-          </ul>
-          <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-white/55">
-            16 professional knockouts
-          </p>
+            <ul className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 sm:flex-row sm:gap-4">
+              <li>2004 NABC Cruiserweight Champion</li>
+              <li>2007 WBC Latino Light Heavyweight Champion</li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-12 grid items-start gap-10 border-t border-white/10 pt-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:gap-14">
