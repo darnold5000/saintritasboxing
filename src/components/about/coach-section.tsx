@@ -4,7 +4,6 @@ import type { CoachProfile } from "@/lib/data/coach";
 const CAREERS = [
   {
     title: "Amateur career",
-    note: "These amateur figures were reported in a historical newspaper article and may not represent final career totals.",
     stats: [
       { figure: "40–5", label: "Reported amateur record" },
       { figure: "35", label: "Amateur knockouts" },
@@ -13,7 +12,6 @@ const CAREERS = [
   },
   {
     title: "Professional career",
-    note: null,
     stats: [
       { figure: "23", label: "Professional victories" },
       { figure: "16", label: "Professional knockouts" },
@@ -65,9 +63,6 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
                     </li>
                   ))}
                 </ul>
-                {group.note ? (
-                  <p className="mt-2 max-w-3xl text-xs leading-5 text-white/50">{group.note}</p>
-                ) : null}
               </div>
             ))}
             <ul className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 sm:flex-row sm:gap-4">
