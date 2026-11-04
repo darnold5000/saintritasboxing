@@ -78,8 +78,8 @@ export function CoachAdmin({ coach }: { coach: CoachProfile }) {
           />
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          A blank line between paragraphs starts a new paragraph. The all-caps first line shows
-          as the tagline.
+          A blank line between paragraphs starts a new paragraph. The first paragraph sits
+          beside the photo. The rest appears under the career story.
         </p>
         <button
           type="submit"

@@ -19,24 +19,42 @@ export const EMPTY_COACH: CoachProfile = {
   photoUrl: null,
 };
 
+const PREVIOUS_ROLE = "Founder, St. Rita's Boxing | Former Professional Boxer";
+const PREVIOUS_BIO = [
+  "George Blades brings a lifetime of boxing experience and a passion for the sport to St. Rita's Boxing in Mooresville, Indiana.",
+  'Known in the professional boxing world as "Honey Boy," George compiled an impressive record of 23 victories, including 16 knockouts, during a professional career spanning 1999 to 2014.',
+  "His accomplishments include capturing the NABC Cruiserweight Championship in 2004 and the WBC Latino Light Heavyweight Championship in 2007. That same year, he competed on the world stage, challenging Zsolt Erdei for the WBO Light Heavyweight World Championship in Budapest, Hungary.",
+  "Today, St. Rita's Boxing is built around the values of hard work, discipline, confidence, and personal growth. Located inside SonShine Park, the gym offers a place for individuals to develop boxing skills, improve fitness, and challenge themselves.",
+  "Whether you're stepping into a boxing gym for the first time or looking to take your training further, St. Rita's Boxing is about putting in the work and becoming better every day.",
+].join("\n\n");
+
 export const DEFAULT_COACH: CoachProfile = {
   name: "George Blades",
-  roleTitle: "Founder, St. Rita's Boxing | Former Professional Boxer",
+  roleTitle: "Founder & Coach | St. Rita's Boxing",
   bio: [
-    "George Blades brings a lifetime of boxing experience and a passion for the sport to St. Rita's Boxing in Mooresville, Indiana.",
-    'Known in the professional boxing world as "Honey Boy," George compiled an impressive record of 23 victories, including 16 knockouts, during a professional career spanning 1999 to 2014.',
-    "His accomplishments include capturing the NABC Cruiserweight Championship in 2004 and the WBC Latino Light Heavyweight Championship in 2007. That same year, he competed on the world stage, challenging Zsolt Erdei for the WBO Light Heavyweight World Championship in Budapest, Hungary.",
-    "Today, St. Rita's Boxing is built around the values of hard work, discipline, confidence, and personal growth. Located inside SonShine Park, the gym offers a place for individuals to develop boxing skills, improve fitness, and challenge themselves.",
-    "Whether you're stepping into a boxing gym for the first time or looking to take your training further, St. Rita's Boxing is about putting in the work and becoming better every day.",
+    'George "Honey Boy" Blades brings decades of real boxing experience to St. Rita\'s Boxing in Mooresville, Indiana.',
+    "Long before stepping into the professional ring, George established himself as a standout amateur boxer. He captured Indiana Golden Gloves championships in 1991 and 1992 and earned a national ranking of ninth among heavyweights by USA Boxing. A historical Orlando Sentinel feature documented his amateur record at the time as 40 wins in 45 bouts, including 35 knockouts.",
+    "George turned professional in 1999, building a career that included 23 victories and 16 knockouts. He captured the NABC Cruiserweight Championship in 2004 and the WBC Latino Light Heavyweight Championship in 2007. Later that year, he challenged Zsolt Erdei for the WBO Light Heavyweight World Championship in Budapest, Hungary.",
+    "Today, George brings that experience to St. Rita's Boxing at SonShine Park. His approach reflects the same qualities that defined his years in the ring: hard work, discipline, determination, and a commitment to getting better.",
+    "Whether you're learning boxing fundamentals, improving your fitness, or pursuing your own boxing goals, St. Rita's offers the opportunity to learn from someone who has experienced the sport at its highest levels.",
   ].join("\n\n"),
   photoPath: null,
   photoUrl: null,
 };
 
 export function withCoachDefaults(coach: CoachProfile): CoachProfile {
-  const hasCopy = coach.name.trim() || coach.roleTitle.trim() || coach.bio.trim();
-  if (hasCopy) return coach;
-  return { ...DEFAULT_COACH, photoPath: coach.photoPath, photoUrl: coach.photoUrl };
+  const name = coach.name.trim();
+  const role = coach.roleTitle.trim();
+  const bio = coach.bio.trim();
+  if (!name && !role && !bio) {
+    return { ...DEFAULT_COACH, photoPath: coach.photoPath, photoUrl: coach.photoUrl };
+  }
+  return {
+    ...coach,
+    name: name || DEFAULT_COACH.name,
+    roleTitle: !role || role === PREVIOUS_ROLE ? DEFAULT_COACH.roleTitle : coach.roleTitle,
+    bio: !bio || bio === PREVIOUS_BIO ? DEFAULT_COACH.bio : coach.bio,
+  };
 }
 
 export async function getCoachProfile(): Promise<CoachProfile> {
