@@ -23,50 +23,49 @@ export function CoachSection({ coach }: { coach: CoachProfile }) {
   return (
     <section className="border-t border-white/10">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:gap-14">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Owner & head coach</p>
+          <h2 className="mt-3 font-heading text-5xl leading-none text-white sm:text-6xl">{heading}</h2>
+          <p className="mt-4 font-heading text-xl tracking-wide text-gold sm:text-2xl">
+            Former professional boxer
+          </p>
+          {coach.roleTitle ? (
+            <p className="mt-3 text-sm font-semibold text-white/70">{coach.roleTitle}</p>
+          ) : null}
+
+          <ul className="mt-8 grid gap-3 sm:grid-cols-3">
+            {HIGHLIGHTS.map((item) => (
+              <li key={item.figure} className="min-w-0 border border-gold/40 bg-white/[0.03] px-4 py-4">
+                <p className="font-heading text-3xl leading-none text-gold">{item.figure}</p>
+                <p className="mt-2 text-[11px] font-bold uppercase leading-snug tracking-[0.14em] text-white">
+                  {item.label}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-white/55">
+            16 professional knockouts
+          </p>
+        </div>
+
+        <div className="mt-12 grid items-start gap-10 border-t border-white/10 pt-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)] lg:gap-14">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Owner & head coach</p>
-            <h2 className="mt-3 font-heading text-5xl leading-none text-white sm:text-6xl">{heading}</h2>
-            <p className="mt-4 font-heading text-xl tracking-wide text-gold sm:text-2xl">
-              Former professional boxer
-            </p>
-            {coach.roleTitle ? (
-              <p className="mt-3 text-sm font-semibold text-white/70">{coach.roleTitle}</p>
-            ) : null}
-
-            <ul className="mt-8 grid gap-3 sm:grid-cols-3">
-              {HIGHLIGHTS.map((item) => (
-                <li key={item.figure} className="min-w-0 border border-gold/40 bg-white/[0.03] px-4 py-4">
-                  <p className="font-heading text-3xl leading-none text-gold">{item.figure}</p>
-                  <p className="mt-2 text-[11px] font-bold uppercase leading-snug tracking-[0.14em] text-white">
-                    {item.label}
+            {intro ? <p className="text-lg leading-8 text-white/85">{intro}</p> : null}
+            {rest.length > 0 ? (
+              <div className={`${intro ? "mt-8 space-y-6" : "space-y-6"}`}>
+                <h3 className="font-heading text-2xl text-white sm:text-3xl">
+                  From Golden Gloves to the world stage.
+                </h3>
+                {rest.map((paragraph) => (
+                  <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-white/75">
+                    {paragraph}
                   </p>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-white/55">
-              16 professional knockouts
-            </p>
-
-            {intro ? (
-              <p className="mt-10 max-w-3xl text-lg leading-8 text-white/85">{intro}</p>
+                ))}
+              </div>
             ) : null}
           </div>
           <PhotoFrame coach={coach} />
         </div>
-
-        {rest.length > 0 ? (
-          <div className="mt-12 max-w-3xl space-y-6 border-t border-white/10 pt-10">
-            <h3 className="font-heading text-2xl text-white sm:text-3xl">
-              From Golden Gloves to the world stage.
-            </h3>
-            {rest.map((paragraph) => (
-              <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-white/75">
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        ) : null}
       </div>
     </section>
   );
