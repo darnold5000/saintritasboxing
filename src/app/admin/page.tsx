@@ -1,3 +1,4 @@
+import { canViewFinancials, getStaffSession } from "@/lib/auth/staff";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
 import { BookingClientCell } from "@/components/admin/client-identity";
 import { listAdminBookings, SAMPLE_BOOKINGS } from "@/lib/data/bookings";
@@ -5,6 +6,8 @@ import { formatLongDate, formatTime } from "@/lib/dates";
 
 export default async function AdminHomePage() {
   const live = isServiceRoleConfigured();
+  const staff = live ? await getStaffSession() : null;
+  const showFinancials = !live || canViewFinancials(staff?.role);
   const bookings = live ? await listAdminBookings() : SAMPLE_BOOKINGS;
   const upcoming = bookings.filter((row) => row.status === "confirmed" || row.status === "held");
 
@@ -18,7 +21,7 @@ export default async function AdminHomePage() {
               <th className="px-3 py-2">When</th>
               <th className="px-3 py-2">Client</th>
               <th className="px-3 py-2">Training</th>
-              <th className="px-3 py-2">Payment</th>
+              {showFinancials ? <th className="px-3 py-2">Payment</th> : null}
               <th className="px-3 py-2">Status</th>
             </tr>
           </thead>
@@ -33,7 +36,7 @@ export default async function AdminHomePage() {
                   <BookingClientCell customers={row.customers} />
                 </td>
                 <td className="px-3 py-2">{String(row.offering_name)}</td>
-                <td className="px-3 py-2">{String(row.payment_status)}</td>
+                {showFinancials ? <td className="px-3 py-2">{String(row.payment_status)}</td> : null}
                 <td className="px-3 py-2">{String(row.status)}</td>
               </tr>
             ))}

@@ -14,7 +14,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-app min-h-screen">
       <div className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="font-heading text-lg text-foreground">Staff admin</p>
+          <p className="font-heading text-lg text-foreground">
+            Staff admin
+            {staff ? (
+              <span className="ml-2 text-sm font-semibold normal-case tracking-normal text-muted-foreground">
+                {staff.role === "owner" ? "Owner" : "Staff"}
+              </span>
+            ) : null}
+          </p>
           <AdminNav />
         </div>
       </div>

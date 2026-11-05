@@ -8,7 +8,9 @@ import { NAV_LINKS, SITE } from "@/lib/site";
 
 export function SiteFooter() {
   const pathname = usePathname();
-  if (pathname.startsWith("/admin") || pathname === "/login") return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/login") || pathname.startsWith("/auth/")) {
+    return null;
+  }
   return (
     <footer className="mt-auto border-t border-white/10 bg-ink">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">

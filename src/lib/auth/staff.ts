@@ -1,3 +1,4 @@
+import { canViewFinancials } from "@/lib/auth/roles";
 import { TABLES } from "@/lib/tables";
 import {
   createClient,
@@ -32,3 +33,5 @@ export async function getStaffSession(): Promise<StaffProfile | null> {
 export function isStaffRole(role: string | null | undefined) {
   return role === "owner" || role === "admin" || role === "staff";
 }
+
+export { canViewFinancials };

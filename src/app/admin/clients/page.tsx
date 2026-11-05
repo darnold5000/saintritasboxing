@@ -1,3 +1,4 @@
+import { canViewFinancials, getStaffSession } from "@/lib/auth/staff";
 import { ClientIdentity } from "@/components/admin/client-identity";
 import { ClientCreditsAdmin } from "@/components/admin/client-credits-admin";
 import { createServiceClient, isServiceRoleConfigured } from "@/lib/supabase/server";
@@ -19,6 +20,8 @@ const SAMPLE = [
 
 export default async function AdminClientsPage() {
   const live = isServiceRoleConfigured();
+  const staff = live ? await getStaffSession() : null;
+  const showFinancials = !live || canViewFinancials(staff?.role);
   let rows = SAMPLE;
   if (live) {
     const db = createServiceClient();
@@ -27,9 +30,13 @@ export default async function AdminClientsPage() {
       .select(
         "id, full_name, email, phone, is_minor, guardian_name, guardian_email, guardian_phone",
       );
-    const { data: purchases } = await db
-      .from(TABLES.purchases)
-      .select("customer_id, sessions_remaining, status");
+    const purchases = showFinancials
+      ? (
+          await db
+            .from(TABLES.purchases)
+            .select("customer_id, sessions_remaining, status")
+        ).data
+      : [];
     rows = (customers ?? []).map((customer) => ({
       id: customer.id,
       full_name: customer.full_name,
@@ -49,9 +56,9 @@ export default async function AdminClientsPage() {
     <section>
       <h1 className="font-heading text-3xl">Clients</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Everyone who has booked or purchased through the site. Add or remove session credits when
-        a client cancels, receives a refund, or needs a manual correction. Each change is logged
-        with a reason.
+        {showFinancials
+          ? "Everyone who has booked or purchased through the site. Add or remove session credits when a client cancels, receives a refund, or needs a manual correction. Each change is logged with a reason."
+          : "Everyone who has booked through the site. Session credits are visible to the owner."}
       </p>
       <div className="mt-6 space-y-4">
         {rows.length === 0 ? (
@@ -74,16 +81,18 @@ export default async function AdminClientsPage() {
                   guardian_phone: row.guardian_phone,
                 }}
               />
-              <p className="mt-2 text-sm">
-                <span className="font-medium">{row.remaining}</span> total sessions remaining
-                (all packages)
-              </p>
+              {showFinancials ? (
+                <p className="mt-2 text-sm">
+                  <span className="font-medium">{row.remaining}</span> total sessions remaining
+                  (all packages)
+                </p>
+              ) : null}
             </div>
-            {live && row.id !== "demo" ? (
+            {showFinancials && live && row.id !== "demo" ? (
               <ClientCreditsAdmin clientId={row.id} clientName={row.full_name} />
-            ) : (
+            ) : showFinancials ? (
               <p className="text-xs text-muted-foreground">Connect Supabase to adjust credits.</p>
-            )}
+            ) : null}
           </article>
         ))}
       </div>

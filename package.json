@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx --test src/lib/catalog.test.ts src/lib/availability.test.ts src/lib/booking-rules.test.ts src/lib/seo.test.ts src/lib/images.test.ts",
+    "test": "npx tsx --test src/lib/catalog.test.ts src/lib/availability.test.ts src/lib/booking-rules.test.ts src/lib/seo.test.ts src/lib/images.test.ts src/lib/auth/roles.test.ts",
     "db:migrate": "npx tsx scripts/db-migrate.ts",
     "db:staff": "npx tsx scripts/db-staff.ts"
   },

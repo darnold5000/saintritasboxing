@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getStaffSession } from "@/lib/auth/staff";
+import { canViewFinancials, getStaffSession } from "@/lib/auth/staff";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
 import { adjustPurchaseCredits, listClientPurchases } from "@/lib/data/credits-admin";
 
@@ -19,6 +19,9 @@ export async function GET(request: Request) {
   if (!staff) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!canViewFinancials(staff.role)) {
+    return NextResponse.json({ error: "Only an owner can view credits." }, { status: 403 });
+  }
   if (!isServiceRoleConfigured()) {
     return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
   }
@@ -36,6 +39,9 @@ export async function POST(request: Request) {
   const staff = await getStaffSession();
   if (!staff) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!canViewFinancials(staff.role)) {
+    return NextResponse.json({ error: "Only an owner can change credits." }, { status: 403 });
   }
   if (!isServiceRoleConfigured()) {
     return NextResponse.json({ error: "Database is not configured." }, { status: 503 });

@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) {
     return NextResponse.next();
   }
-  if (pathname === "/api/admin/login") {
+  if (pathname === "/api/admin/login" || pathname === "/api/admin/forgot-password") {
     return NextResponse.next();
   }
 

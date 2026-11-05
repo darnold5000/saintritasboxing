@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -54,10 +55,17 @@ export function AdminLoginForm() {
           className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-foreground"
         />
       </label>
-      <label className="block text-sm">
-        Password
-        <div className="relative mt-1">
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor="staff-password" className="text-sm">
+          Password
+        </label>
+        <Link href="/login/forgot" className="text-sm font-semibold text-brand">
+          Forgot password?
+        </Link>
+      </div>
+      <div className="relative">
           <input
+            id="staff-password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             required
@@ -73,8 +81,7 @@ export function AdminLoginForm() {
           >
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
-        </div>
-      </label>
+      </div>
       {error ? (
         <p className="text-sm text-red-700" role="alert">
           {error}

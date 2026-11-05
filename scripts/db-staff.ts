@@ -3,11 +3,18 @@
  * Usage:
  *   STAFF_EMAIL=you@example.com npm run db:staff
  *   STAFF_USER_ID=uuid-from-auth npm run db:staff
+ *   STAFF_EMAIL=coach@example.com STAFF_ROLE=staff npm run db:staff
  */
 import { createServiceScriptClient } from "./lib/supabase-script-client";
 
 const email = process.env.STAFF_EMAIL?.trim().toLowerCase();
 const userId = process.env.STAFF_USER_ID?.trim();
+const role = (process.env.STAFF_ROLE?.trim() || "owner").toLowerCase();
+
+if (role !== "owner" && role !== "staff") {
+  console.error("STAFF_ROLE must be owner or staff.");
+  process.exit(1);
+}
 
 if (!email && !userId) {
   console.error("Set STAFF_EMAIL or STAFF_USER_ID.");
@@ -52,7 +59,7 @@ async function main() {
       user_id: user.id,
       email: profileEmail,
       full_name: user.user_metadata?.full_name ?? null,
-      role: "owner",
+      role,
       active: true,
     },
     { onConflict: "user_id" },
@@ -66,7 +73,7 @@ async function main() {
     }
     throw error;
   }
-  console.log(`Staff owner granted to ${profileEmail} (${user.id}).`);
+  console.log(`Staff ${role} granted to ${profileEmail} (${user.id}).`);
 }
 
 main().catch((error) => {

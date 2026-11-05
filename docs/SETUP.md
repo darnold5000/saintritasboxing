@@ -10,7 +10,7 @@ Copy `.env.example` to `.env.local`. Use **this client's** credentials only.
    - **CLI:** `DATABASE_URL=postgresql://... npm run db:migrate`  
      On shared production (`gezdzzqnylloaxcmuzvm`), also set `SRB_MIGRATE_CONFIRM=gezdzzqnylloaxcmuzvm`.
 3. Disable public signup. Invite staff in Auth.
-4. Grant admin: `STAFF_EMAIL=owner@example.com npm run db:staff` or `STAFF_USER_ID=<auth-uuid> npm run db:staff`
+4. Grant access: `STAFF_EMAIL=owner@example.com npm run db:staff` (owner) or `STAFF_EMAIL=coach@example.com STAFF_ROLE=staff npm run db:staff`. Owners see payments and credits. Staff can use the portal without those.
 
 Tables are prefixed `srb_` so they do not collide with other products.
 
