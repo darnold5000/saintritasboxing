@@ -13,6 +13,17 @@ export const SITE = {
   phoneHref: "tel:+14078442522",
   smsHref: "sms:+14078442522",
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "",
+  mail: {
+    fromName: "Saint Ritas Boxing",
+    fromEmail:
+      process.env.RESEND_FROM_EMAIL?.trim() || "info@hiresignalworks.com",
+    replyTo:
+      process.env.RESEND_REPLY_TO?.trim() || "stritasboxing@gmail.com",
+    notifyTo:
+      process.env.OWNER_EMAIL?.trim() ||
+      process.env.STAFF_NOTIFICATION_EMAIL?.trim() ||
+      "stritasboxing@gmail.com",
+  },
   timezone: "America/Indiana/Indianapolis",
   address: {
     venue: "SonShine Park",

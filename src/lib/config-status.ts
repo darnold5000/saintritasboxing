@@ -1,3 +1,5 @@
+import { SITE } from "@/lib/site";
+
 export type IntegrationStatus = {
   supabase: boolean;
   stripe: boolean;
@@ -18,12 +20,8 @@ export function getIntegrationStatus(): IntegrationStatus {
         process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
     ),
     stripe: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
-    resend: Boolean(
-      process.env.RESEND_API_KEY?.trim() && process.env.RESEND_FROM_EMAIL?.trim(),
-    ),
-    ownerEmail: Boolean(
-      process.env.OWNER_EMAIL?.trim() || process.env.STAFF_NOTIFICATION_EMAIL?.trim(),
-    ),
+    resend: Boolean(process.env.RESEND_API_KEY?.trim() && SITE.mail.fromEmail),
+    ownerEmail: Boolean(SITE.mail.notifyTo),
     siteUrl,
   };
 }
@@ -38,9 +36,5 @@ export function publicConfigBanner(status: IntegrationStatus) {
 }
 
 export function ownerNotifyEmail() {
-  return (
-    process.env.OWNER_EMAIL?.trim() ||
-    process.env.STAFF_NOTIFICATION_EMAIL?.trim() ||
-    ""
-  );
+  return SITE.mail.notifyTo;
 }

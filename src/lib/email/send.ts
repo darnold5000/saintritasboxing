@@ -7,16 +7,16 @@ import { ownerNotifyEmail } from "@/lib/config-status";
 import { SITE } from "@/lib/site";
 
 export function isEmailConfigured() {
-  return Boolean(
-    process.env.RESEND_API_KEY?.trim() && process.env.RESEND_FROM_EMAIL?.trim(),
-  );
+  return Boolean(process.env.RESEND_API_KEY?.trim() && SITE.mail.fromEmail);
 }
 
 function fromAddress() {
   const email = resolveResendFromEmail({
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+    fallbackFromEmail: SITE.mail.fromEmail,
   });
-  return formatBrandedFromAddress(SITE.name, email);
+  const fromName = SITE.mail.fromName.replaceAll('"', "");
+  return formatBrandedFromAddress(`"${fromName}"`, email);
 }
 
 export async function sendTransactionalEmail(input: {
@@ -34,6 +34,7 @@ export async function sendTransactionalEmail(input: {
   const result = await provider.send({
     from: fromAddress(),
     to: input.to,
+    replyTo: SITE.mail.replyTo,
     subject: input.subject,
     html: input.html,
     text: input.text,

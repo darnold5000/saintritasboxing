@@ -34,6 +34,19 @@ export function ForgotPasswordForm() {
     }
   }
 
+  if (message) {
+    return (
+      <>
+        <p className="mt-6 text-sm text-foreground">{message}</p>
+        <p className="mt-4 text-sm">
+          <Link href="/login" className="font-semibold text-brand">
+            Back to staff login
+          </Link>
+        </p>
+      </>
+    );
+  }
+
   return (
     <>
       <form onSubmit={(event) => void onSubmit(event)} className="mt-6 space-y-4">
@@ -53,7 +66,6 @@ export function ForgotPasswordForm() {
             {error}
           </p>
         ) : null}
-        {message ? <p className="text-sm text-foreground">{message}</p> : null}
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Sending…" : "Send reset link"}
         </Button>

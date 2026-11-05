@@ -26,9 +26,10 @@ Prices are **not** hardcoded as Stripe Price IDs. Checkout sends `price_data` fr
 
 ## Email
 
-1. Verify the sending domain in Resend (SPF, DKIM, DMARC).
-2. Set `RESEND_API_KEY` and `RESEND_FROM_EMAIL`.
-3. Set `OWNER_EMAIL` for owner notifications and the contact form.
+1. Verify `hiresignalworks.com` in Resend (SPF, DKIM, DMARC).
+2. Set `RESEND_API_KEY`. Mail is sent from `info@hiresignalworks.com` as **Saint Ritas Boxing**.
+3. Contact form and booking alerts go to `stritasboxing@gmail.com`. Reply-To on every email is that same address.
+4. Staff sign-in does not send mail. The forgot-password link does, and that message goes to the staff member who asked for it.
 
 Do not invent an owner address.
 

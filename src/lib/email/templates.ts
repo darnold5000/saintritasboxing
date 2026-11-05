@@ -2,11 +2,11 @@ import { escapeHtml } from "@/lib/signalworks/email";
 import { SITE } from "@/lib/site";
 import { formatUsd } from "@/lib/catalog";
 
-function wrap(title: string, body: string) {
+function wrap(title: string, body: string, brand = "ST. RITA'S BOXING") {
   return `<!doctype html>
 <html><body style="margin:0;background:#0B0A0F;color:#F7F4ED;font-family:Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-    <p style="color:#F3B72F;letter-spacing:.18em;font-size:12px;font-weight:700;">ST. RITA'S BOXING</p>
+    <p style="color:#F3B72F;letter-spacing:.18em;font-size:12px;font-weight:700;">${escapeHtml(brand)}</p>
     <h1 style="font-size:24px;line-height:1.2;margin:8px 0 16px;">${escapeHtml(title)}</h1>
     ${body}
     <p style="margin-top:28px;font-size:13px;color:#B9B5C0;">
@@ -102,13 +102,14 @@ export function contactEmail(input: {
   message: string;
 }) {
   const html = wrap(
-    "Website contact",
-    `<p>${escapeHtml(input.name)} sent a message from the St. Rita's site.</p>
+    "New message",
+    `<p>${escapeHtml(input.name)} sent a message to Saint Ritas Boxing.</p>
      <p>${escapeHtml(input.email)} · ${escapeHtml(input.phone)}</p>
      <p>${escapeHtml(input.message)}</p>`,
+    "SAINT RITAS BOXING",
   );
-  const text = `${input.name}\n${input.email}\n${input.phone}\n\n${input.message}`;
-  return { html, text, subject: `Contact form — ${input.name}` };
+  const text = `Saint Ritas Boxing\n${input.name}\n${input.email}\n${input.phone}\n\n${input.message}`;
+  return { html, text, subject: `Saint Ritas Boxing — ${input.name}` };
 }
 
 export function magicLinkEmail(input: { name?: string; url: string }) {
