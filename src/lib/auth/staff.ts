@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { canViewFinancials } from "@/lib/auth/roles";
 import { TABLES } from "@/lib/tables";
 import {
@@ -13,7 +14,7 @@ export type StaffProfile = {
   active: boolean;
 };
 
-export async function getStaffSession(): Promise<StaffProfile | null> {
+export const getStaffSession = cache(async (): Promise<StaffProfile | null> => {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -28,7 +29,7 @@ export async function getStaffSession(): Promise<StaffProfile | null> {
 
   if (!data || data.active === false) return null;
   return data as StaffProfile;
-}
+});
 
 export function isStaffRole(role: string | null | undefined) {
   return role === "owner" || role === "admin" || role === "staff";

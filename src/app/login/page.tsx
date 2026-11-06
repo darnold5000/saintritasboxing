@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { AdminLoginForm } from "@/components/admin/login-form";
+import { getStaffSession } from "@/lib/auth/staff";
 import { createMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -10,8 +12,11 @@ export const metadata = createMetadata({
   index: false,
 });
 
-export default function LoginPage() {
+export default async function LoginPage() {
   const configured = isSupabaseConfigured();
+  if (configured && (await getStaffSession())) {
+    redirect("/admin");
+  }
   return (
     <div className="flex justify-center px-4 py-16">
       <div className="admin-app w-full max-w-md rounded-2xl border border-border p-8 shadow-lg">

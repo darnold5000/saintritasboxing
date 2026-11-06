@@ -44,8 +44,16 @@ export function AdminNav() {
         href="/"
         className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        View site
+        Back to website
       </Link>
+      <form action="/api/admin/logout" method="post">
+        <button
+          type="submit"
+          className="rounded-md bg-brand px-3 py-1.5 text-white transition-colors hover:bg-brand/90"
+        >
+          Log out
+        </button>
+      </form>
     </nav>
   );
 }

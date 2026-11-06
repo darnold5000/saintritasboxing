@@ -4,20 +4,16 @@ import { TABLES } from "@/lib/tables";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) {
-    return NextResponse.next();
-  }
-  if (pathname === "/api/admin/login" || pathname === "/api/admin/forgot-password") {
-    return NextResponse.next();
-  }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!url || !anon) {
+  if (pathname === "/api/admin/logout") {
     return NextResponse.next();
   }
 
   let response = NextResponse.next({ request });
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anon) return response;
+
   const supabase = createServerClient(url, anon, {
     cookies: {
       getAll() {
@@ -33,26 +29,39 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) {
-    const login = new URL("/login", request.url);
-    return NextResponse.redirect(login);
+  let userId: string | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    userId = data.user?.id ?? null;
+  } catch (error) {
+    console.error("[middleware] session refresh failed", error);
+  }
+
+  const isAdmin =
+    pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  const isOpenAdminApi =
+    pathname === "/api/admin/login" || pathname === "/api/admin/forgot-password";
+
+  if (!isAdmin || isOpenAdminApi) return response;
+  if (!userId) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const { data: staff } = await supabase
     .from(TABLES.staff)
     .select("active, role")
-    .eq("user_id", data.user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (!staff?.active) {
-    const login = new URL("/login?reason=no_staff", request.url);
-    return NextResponse.redirect(login);
+    return NextResponse.redirect(new URL("/login?reason=no_staff", request.url));
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };
