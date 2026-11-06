@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { offeringById } from "@/lib/catalog";
+import { getOffering } from "@/lib/data/offerings";
 import { firstSessionRequired, validateCustomerInput } from "@/lib/booking-rules";
 import { getIntegrationStatus } from "@/lib/config-status";
 import { isSlotAvailable } from "@/lib/data/availability";
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid booking details." }, { status: 400 });
   }
 
-  const offering = offeringById(parsed.data.offeringId);
-  if (!offering) {
+  const offering = await getOffering(parsed.data.offeringId);
+  if (!offering || offering.published === false) {
     return NextResponse.json({ error: "Unknown training option." }, { status: 400 });
   }
 

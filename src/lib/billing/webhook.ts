@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { TABLES } from "@/lib/tables";
-import { offeringById, TRAINING_TYPES, type TrainingTypeId } from "@/lib/catalog";
+import { TRAINING_TYPES, type TrainingTypeId } from "@/lib/catalog";
+import { getOffering } from "@/lib/data/offerings";
 import { formatLongDate, formatTime } from "@/lib/dates";
 import { createServiceClient } from "@/lib/supabase/server";
 import { notifyOwner, sendTransactionalEmail } from "@/lib/email/send";
@@ -57,7 +58,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!purchase) return;
   if (purchase.status === "paid") return;
 
-  const offering = offeringById(String(purchase.offering_id));
+  const offering = await getOffering(String(purchase.offering_id));
   const sessionsTotal = offering?.sessions ?? Number(purchase.sessions_total) ?? 0;
   const bookedNow = session.metadata?.bookingId ? 1 : 0;
   const remaining =

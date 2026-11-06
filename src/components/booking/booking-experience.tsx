@@ -12,7 +12,8 @@ import {
   isClassTraining,
   packageOfferingsForType,
   singleOfferingForType,
-  subscriptionOfferingForType,
+  subscriptionOfferingsForType,
+  type CatalogOffering,
   type TrainingTypeId,
 } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
@@ -55,9 +56,11 @@ const EMPTY = {
 export function BookingExperience({
   initialDates,
   demo,
+  offerings,
 }: {
   initialDates: string[];
   demo: boolean;
+  offerings: CatalogOffering[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -66,9 +69,9 @@ export function BookingExperience({
   const typeParam = params.get("type");
   const trainingType = parseTrainingType(typeParam);
   const classPlan = isClassTraining(trainingType);
-  const singleOffering = singleOfferingForType(trainingType);
-  const packages = packageOfferingsForType(trainingType);
-  const membership = subscriptionOfferingForType(trainingType);
+  const singleOffering = singleOfferingForType(trainingType, offerings);
+  const packages = packageOfferingsForType(trainingType, offerings);
+  const memberships = subscriptionOfferingsForType(trainingType, offerings);
   const verifyToken = params.get("token");
 
   const [weekISO, setWeekISO] = useState(startOfWeek(today));
@@ -96,9 +99,10 @@ export function BookingExperience({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     verifyToken ? "use_credit" : classPlan ? "start_membership" : "pay_single",
   );
-  const [packageOfferingId, setPackageOfferingId] = useState(
-    packages[0]?.id ?? "",
-  );
+  const [packageOfferingId, setPackageOfferingId] = useState(packages[0]?.id ?? "");
+  const [membershipOfferingId, setMembershipOfferingId] = useState(memberships[0]?.id ?? "");
+  const membership =
+    memberships.find((item) => item.id === membershipOfferingId) ?? memberships[0] ?? null;
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim());
   const creditLookupDisplay = emailValid ? creditLookup : null;
@@ -208,7 +212,8 @@ export function BookingExperience({
     setTimes([]);
     setStep("schedule");
     setPaymentMethod(isClassTraining(next) ? "start_membership" : "pay_single");
-    setPackageOfferingId(packageOfferingsForType(next)[0]?.id ?? "");
+    setPackageOfferingId(packageOfferingsForType(next, offerings)[0]?.id ?? "");
+    setMembershipOfferingId(subscriptionOfferingsForType(next, offerings)[0]?.id ?? "");
     setCustomer((current) => ({
       ...current,
       isMinor: next === "youth-class",
@@ -582,6 +587,24 @@ export function BookingExperience({
                           : "Recurring monthly until cancelled. The monthly rate still needs to be set."
                       }
                     />
+                    {paymentMethod === "start_membership" && memberships.length > 1 ? (
+                      <div className="space-y-2 pl-1">
+                        {memberships.map((plan) => (
+                          <label key={plan.id} className="flex items-center justify-between text-sm text-white">
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="membership"
+                                checked={membership?.id === plan.id}
+                                onChange={() => setMembershipOfferingId(plan.id)}
+                              />
+                              {plan.name}
+                            </span>
+                            <span>{plan.priceCents > 0 ? `${formatUsd(plan.priceCents)}/month` : "Rate not set"}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <>

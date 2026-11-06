@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const usable = pickCreditForType(credits, parsed.data.trainingType);
+  const usable = await pickCreditForType(credits, parsed.data.trainingType);
   const unlimitedActive = Boolean(usable?.unlimitedActive);
 
   return NextResponse.json({

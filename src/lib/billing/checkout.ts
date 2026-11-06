@@ -1,7 +1,8 @@
 import type Stripe from "stripe";
 import { SITE } from "@/lib/site";
 import { TABLES } from "@/lib/tables";
-import { offeringById, TRAINING_TYPES, type CatalogOffering } from "@/lib/catalog";
+import { TRAINING_TYPES, type CatalogOffering } from "@/lib/catalog";
+import { getOffering } from "@/lib/data/offerings";
 import { checkoutMode } from "@/lib/booking-rules";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -32,8 +33,8 @@ export async function createOfferingCheckout(input: {
         "Stripe is not configured. Add St. Rita's test keys before taking payments.",
     };
   }
-  const offering = offeringById(input.offeringId);
-  if (!offering) {
+  const offering = await getOffering(input.offeringId);
+  if (!offering || offering.published === false) {
     return { ok: false as const, code: "INVALID_OFFERING", error: "Unknown training option." };
   }
   if (offering.priceCents <= 0) {

@@ -27,6 +27,8 @@ export type CatalogOffering = {
   interval: "month" | null;
   cta: string;
   description: string;
+  published?: boolean;
+  sortOrder?: number;
 };
 
 export const TRAINING_TYPES: Record<TrainingTypeId, TrainingType> = {
@@ -215,34 +217,70 @@ export const CREDIT_POLICY = {
   note: "Expiration dates and booking limits are left unset until the owner confirms them.",
 };
 
-export function offeringById(id: string | null | undefined) {
-  return OFFERINGS.find((item) => item.id === id) ?? null;
+export function offeringById(
+  id: string | null | undefined,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return offerings.find((item) => item.id === id) ?? null;
 }
 
-export function offeringsForType(type: TrainingTypeId) {
-  return OFFERINGS.filter((item) => item.trainingType === type);
+export function offeringsForType(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return offerings.filter((item) => item.trainingType === type && item.published !== false);
 }
 
-export function singleOfferingForType(type: TrainingTypeId) {
-  return OFFERINGS.find((item) => item.trainingType === type && item.kind === "single") ?? null;
-}
-
-export function packageOfferingsForType(type: TrainingTypeId) {
-  return OFFERINGS.filter(
-    (item) => item.trainingType === type && item.kind === "package",
+export function singleOfferingForType(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return (
+    offerings.find(
+      (item) => item.trainingType === type && item.kind === "single" && item.published !== false,
+    ) ?? null
   );
 }
 
-export function subscriptionOfferingForType(type: TrainingTypeId) {
-  return OFFERINGS.find((item) => item.trainingType === type && item.kind === "subscription") ?? null;
+export function packageOfferingsForType(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return offerings.filter(
+    (item) => item.trainingType === type && item.kind === "package" && item.published !== false,
+  );
+}
+
+export function subscriptionOfferingsForType(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return offerings.filter(
+    (item) =>
+      item.trainingType === type && item.kind === "subscription" && item.published !== false,
+  );
+}
+
+export function subscriptionOfferingForType(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  return subscriptionOfferingsForType(type, offerings)[0] ?? null;
 }
 
 export function isClassTraining(type: TrainingTypeId) {
   return Boolean(TRAINING_TYPES[type].classMembership);
 }
 
-export function membershipCoversTraining(offeringId: string, type: TrainingTypeId) {
-  return subscriptionOfferingForType(type)?.id === offeringId;
+export function membershipCoversTraining(
+  offeringId: string,
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  const offering = offerings.find((item) => item.id === offeringId);
+  return Boolean(
+    offering && offering.trainingType === type && offering.kind === "subscription",
+  );
 }
 
 export function formatUsd(cents: number) {
@@ -253,16 +291,22 @@ export function formatUsd(cents: number) {
   }).format(cents / 100);
 }
 
-export function singleSessionPrice(type: TrainingTypeId) {
-  const single = OFFERINGS.find(
-    (item) => item.trainingType === type && item.kind === "single",
+export function singleSessionPrice(
+  type: TrainingTypeId,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
+  const single = offerings.find(
+    (item) => item.trainingType === type && item.kind === "single" && item.published !== false,
   );
   return single?.priceCents ?? TRAINING_TYPES[type].startingPriceCents;
 }
 
-export function packageSavings(offering: CatalogOffering) {
+export function packageSavings(
+  offering: CatalogOffering,
+  offerings: CatalogOffering[] = OFFERINGS,
+) {
   if (offering.kind !== "package" || !offering.sessions) return null;
-  const compared = singleSessionPrice(offering.trainingType) * offering.sessions;
+  const compared = singleSessionPrice(offering.trainingType, offerings) * offering.sessions;
   const saved = compared - offering.priceCents;
   if (saved <= 0) return null;
   return { comparedCents: compared, savedCents: saved };

@@ -1,4 +1,5 @@
 import { PackageCards } from "@/components/pricing/package-cards";
+import { loadOfferings } from "@/lib/data/offerings";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata = createMetadata({
@@ -8,7 +9,10 @@ export const metadata = createMetadata({
   path: "/pricing",
 });
 
-export default function PricingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PricingPage() {
+  const offerings = await loadOfferings();
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Pricing</p>
@@ -21,7 +25,7 @@ export default function PricingPage() {
         private and partner sessions come from the flyer.
       </p>
       <div className="mt-10">
-        <PackageCards />
+        <PackageCards offerings={offerings} />
       </div>
     </section>
   );

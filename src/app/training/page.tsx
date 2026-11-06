@@ -2,6 +2,7 @@ import { HomePurpose } from "@/components/home/purpose";
 import { HomeTrainingOptions } from "@/components/home/training-options";
 import { HomeIncluded } from "@/components/home/included";
 import { HomeCta } from "@/components/home/cta";
+import { loadOfferings } from "@/lib/data/offerings";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata = createMetadata({
@@ -11,7 +12,10 @@ export const metadata = createMetadata({
   path: "/training",
 });
 
-export default function TrainingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TrainingPage() {
+  const offerings = await loadOfferings();
   return (
     <>
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -25,7 +29,7 @@ export default function TrainingPage() {
         </p>
       </section>
       <HomePurpose />
-      <HomeTrainingOptions />
+      <HomeTrainingOptions offerings={offerings} />
       <HomeIncluded />
       <HomeCta />
     </>

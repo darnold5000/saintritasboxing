@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import {
   TRAINING_TYPES,
   formatUsd,
-  offeringById,
   offeringsForType,
   packageSavings,
   REGISTRATION_FEE,
@@ -11,25 +10,9 @@ import {
 } from "@/lib/catalog";
 
 const SESSION_TYPES: TrainingTypeId[] = ["private", "partner"];
+const CLASS_TYPES: TrainingTypeId[] = ["youth-class", "adult-class"];
 
-const CLASS_PLANS: {
-  id: string;
-  audience: string;
-  detail: string;
-}[] = [
-  {
-    id: "class-youth-unlimited",
-    audience: "Youth",
-    detail: "Under 18. Weekday youth classes only. Billed every month until cancelled.",
-  },
-  {
-    id: "class-adult-unlimited",
-    audience: "Adult",
-    detail: "18 and over. Weekday adult classes only. Billed every month until cancelled.",
-  },
-];
-
-export function PackageCards() {
+export function PackageCards({ offerings }: { offerings: CatalogOffering[] }) {
   return (
     <div className="space-y-14">
       {SESSION_TYPES.map((typeId) => {
@@ -42,8 +25,8 @@ export function PackageCards() {
             <h2 className="mt-2 font-heading text-3xl text-white sm:text-4xl">{type.name}</h2>
             <p className="mt-2 max-w-2xl text-sm text-white/70">{type.summary}</p>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {offeringsForType(typeId).map((offering) => (
-                <OfferingCard key={offering.id} offering={offering} typeId={typeId} />
+              {offeringsForType(typeId, offerings).map((offering) => (
+                <OfferingCard key={offering.id} offering={offering} typeId={typeId} offerings={offerings} />
               ))}
             </div>
           </section>
@@ -60,19 +43,18 @@ export function PackageCards() {
           adult membership only books adult class.
         </p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {CLASS_PLANS.map((plan) => {
-            const offering = offeringById(plan.id);
-            if (!offering) return null;
-            return (
+          {CLASS_TYPES.flatMap((typeId) =>
+            offeringsForType(typeId, offerings).map((offering) => (
               <OfferingCard
-                key={plan.id}
+                key={offering.id}
                 offering={offering}
                 typeId={offering.trainingType}
-                audience={plan.audience}
-                detail={plan.detail}
+                audience={TRAINING_TYPES[typeId].shortName}
+                detail={offering.description}
+                offerings={offerings}
               />
-            );
-          })}
+            )),
+          )}
         </div>
       </section>
 
@@ -91,13 +73,15 @@ function OfferingCard({
   typeId,
   audience,
   detail,
+  offerings,
 }: {
   offering: CatalogOffering;
   typeId: TrainingTypeId;
+  offerings: CatalogOffering[];
   audience?: string;
   detail?: string;
 }) {
-  const savings = packageSavings(offering);
+  const savings = packageSavings(offering, offerings);
   return (
     <article className="flex flex-col rounded-2xl border border-white/10 bg-surface p-6">
       {audience ? (

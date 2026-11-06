@@ -5,6 +5,7 @@ import { HomeIncluded } from "@/components/home/included";
 import { HomeFacility } from "@/components/home/facility";
 import { HomeReviews } from "@/components/home/reviews";
 import { HomeCta } from "@/components/home/cta";
+import { loadOfferings } from "@/lib/data/offerings";
 import { listPublishedReviews } from "@/lib/data/reviews";
 import { createMetadata } from "@/lib/seo";
 import { isServiceRoleConfigured } from "@/lib/supabase/server";
@@ -17,7 +18,10 @@ export const metadata = createMetadata({
   exactTitle: true,
 });
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
+  const offerings = await loadOfferings();
   let reviews: Awaited<ReturnType<typeof listPublishedReviews>> = [];
   if (isServiceRoleConfigured()) {
     try {
@@ -31,7 +35,7 @@ export default async function HomePage() {
     <>
       <HomeHero />
       <HomePurpose />
-      <HomeTrainingOptions />
+      <HomeTrainingOptions offerings={offerings} />
       <HomeIncluded />
       <HomeFacility />
       <HomeReviews reviews={reviews} />

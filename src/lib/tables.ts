@@ -15,4 +15,5 @@ export const TABLES = {
   reviews: "srb_reviews",
   coachProfile: "srb_coach_profile",
   galleryImages: "srb_gallery_images",
+  offerings: "srb_offerings",
 } as const;

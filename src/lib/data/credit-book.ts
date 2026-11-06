@@ -1,4 +1,4 @@
-import { offeringById } from "@/lib/catalog";
+import { getOffering } from "@/lib/data/offerings";
 import { canBookWithCredits, remainingAfterBooking } from "@/lib/booking-rules";
 import { TABLES } from "@/lib/tables";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -18,7 +18,7 @@ export async function bookWithCredits(input: {
   if (!credits) {
     return { ok: false as const, error: "No training account found for that email." };
   }
-  const usable = pickCreditForType(credits, input.trainingType);
+  const usable = await pickCreditForType(credits, input.trainingType);
   if (!usable || !canBookWithCredits(usable, input.trainingType)) {
     return {
       ok: false as const,
@@ -28,7 +28,7 @@ export async function bookWithCredits(input: {
 
   const offeringId =
     input.trainingType === "private" ? "private-single" : "partner-single";
-  const offering = offeringById(offeringId);
+  const offering = await getOffering(offeringId);
   if (!offering) {
     return { ok: false as const, error: "Training option is unavailable." };
   }

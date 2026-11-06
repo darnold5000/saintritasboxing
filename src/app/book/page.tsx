@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { BookingExperience } from "@/components/booking/booking-experience";
 import { createMetadata } from "@/lib/seo";
 import { getOpenDates } from "@/lib/data/availability";
+import { loadOfferings } from "@/lib/data/offerings";
 
 export const metadata = createMetadata({
   title: "Book Boxing Training",
@@ -13,7 +14,7 @@ export const metadata = createMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function BookPage() {
-  const { dates, demo } = await getOpenDates();
+  const [{ dates, demo }, offerings] = await Promise.all([getOpenDates(), loadOfferings()]);
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-14">
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold">Book now</p>
@@ -24,7 +25,7 @@ export default async function BookPage() {
       </p>
       <div className="mt-8">
         <Suspense fallback={<p className="text-sm text-white/60">Loading booking…</p>}>
-          <BookingExperience initialDates={Array.from(dates)} demo={demo} />
+          <BookingExperience initialDates={Array.from(dates)} demo={demo} offerings={offerings} />
         </Suspense>
       </div>
     </section>

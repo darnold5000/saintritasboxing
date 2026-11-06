@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   await upsertCustomer(parsed.data.customer);
 
   const credits = await customerCredits(parsed.data.customer.email);
-  const usable = credits ? pickCreditForType(credits, parsed.data.trainingType) : null;
+  const usable = credits ? await pickCreditForType(credits, parsed.data.trainingType) : null;
   if (!usable || (!usable.unlimitedActive && usable.remaining <= 0)) {
     return NextResponse.json({ error: "No session credits available for this training type." }, { status: 400 });
   }
